@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FMS 설비 데이터 분석 및 이상 탐지 시스템</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Custom Style -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Third Party Libraries from CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-accent">FMS</span><span class="logo-text"> Analyzer</span>
+                </div>
+                <div class="system-status">
+                    <span class="status-indicator online"></span>
+                    <span class="status-text">Client Engine</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#overview" class="menu-item active" id="menu-overview">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>종합 대시보드</span>
+                </a>
+                <a href="#spc" class="menu-item" id="menu-spc">
+                    <i data-lucide="line-chart"></i>
+                    <span>SPC & 이상 탐지</span>
+                </a>
+                <a href="#quality" class="menu-item" id="menu-quality">
+                    <i data-lucide="server"></i>
+                    <span>설비 요소 분석 (Slot/PLT)</span>
+                </a>
+                <a href="#import" class="menu-item" id="menu-import">
+                    <i data-lucide="file-up"></i>
+                    <span>데이터 가져오기</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="active-file-card" id="active-file-card">
+                    <div class="card-title">로드된 데이터</div>
+                    <div class="card-desc" id="loaded-file-name">데이터 없음</div>
+                    <div class="card-stats" id="loaded-file-rows">- rows</div>
+                </div>
+                <div class="copyright">
+                    © 2026 Antigravity FMS
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Bar Header -->
+            <header class="main-header">
+                <button class="btn-toggle-sidebar" id="btn-toggle-sidebar">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-title">
+                    <h1 id="view-title">종합 대시보드</h1>
+                    <p id="view-subtitle" class="header-subtitle">FMS 생산 및 품질 데이터 실시간 분석 현황</p>
+                </div>
+                <div class="header-actions">
+                    <div class="date-time" id="system-time">2026-06-05 10:00:00</div>
+                    <button class="btn btn-secondary" id="btn-export-report">
+                        <i data-lucide="printer"></i>
+                        <span>인쇄/PDF 저장</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- View Containers -->
+            <div class="view-viewport">
+                <!-- VIEW 1: OVERVIEW -->
+                <section id="view-overview" class="view-section active">
+                    <!-- KPI Panel -->
+                    <div class="kpi-grid" id="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper blue">
+                                <i data-lucide="package"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">총 검사 수량</div>
+                                <div class="kpi-value" id="kpi-total">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper green">
+                                <i data-lucide="check-circle-2"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">양품 수량</div>
+                                <div class="kpi-value" id="kpi-ok">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper red">
+                                <i data-lucide="alert-triangle"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">불량 수량 (NG)</div>
+                                <div class="kpi-value text-red" id="kpi-ng">0</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper purple">
+                                <i data-lucide="percent"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">공정 불량률</div>
+                                <div class="kpi-value" id="kpi-ng-rate">0.00%</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper orange">
+                                <i data-lucide="clock"></i>
+                            </div>
+                            <div class="kpi-info">
+                                <div class="kpi-label">평균 가공 시간</div>
+                                <div class="kpi-value" id="kpi-avg-time">0.0s</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="dashboard-grid">
+                        <!-- 설비 품질 종합 분석 의견 카드 -->
+                        <div class="dashboard-card span-3" id="overview-insight-card" style="display: none;">
+                            <div class="card-header">
+                                <h3 class="card-title-text" style="display: flex; align-items: center; gap: 8px;">
+                                    <i data-lucide="brain-circuit" style="color: var(--accent-cyan); width: 20px; height: 20px;"></i>
+                                    <span>설비 품질 종합 분석 및 진단 의견</span>
+                                </h3>
+                            </div>
+                            <div class="insight-container" id="overview-insight-opinion" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%; height: auto;">
+                                <!-- 동적 분석 의견 추가 영역 -->
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card span-2">
+                            <div class="card-header">
+                                <h3 class="card-title-text">생산 추이 및 불량률 변화 (시간별)</h3>
+                                <div class="card-actions">
+                                    <span class="legend-dot blue"></span> 생산량
+                                    <span class="legend-dot red ml-2"></span> 불량률
+                                </div>
+                            </div>
+                            <div class="chart-container" id="chart-production-trend"></div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title-text">슬롯(수대)별 불량률 비교</h3>
+                            </div>
+                            <div class="chart-container" id="chart-machine-distribution"></div>
+                        </div>
+
+                        <div class="dashboard-card span-2">
+                            <div class="card-header">
+                                <h3 class="card-title-text">설비 슬롯/팔레트별 불량률 순위 (Top 10)</h3>
+                            </div>
+                            <div class="chart-container" id="chart-defect-ranking"></div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title-text">데이터 상태 통계</h3>
+                            </div>
+                            <div class="summary-list" id="overview-summary-list">
+                                <div class="empty-state">데이터를 가져오면 요약 정보가 표시됩니다.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 2: SPC & ANOMALY DETECTION -->
+                <section id="view-spc" class="view-section">
+                    <div class="control-panel-card">
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label for="select-spc-parameter">분석할 측정 검사 항목</label>
+                                <select id="select-spc-parameter" class="form-select">
+                                    <option value="">-- 측정 항목을 선택하세요 --</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="filter-spc-slot">수대(Slot) 필터</label>
+                                <select id="filter-spc-slot" class="form-select">
+                                    <option value="">전체 수대</option>
+                                    <option value="1">1번 수대 (Slot 1)</option>
+                                    <option value="2">2번 수대 (Slot 2)</option>
+                                    <option value="3">3번 수대 (Slot 3)</option>
+                                    <option value="4">4번 수대 (Slot 4)</option>
+                                    <option value="5">5번 수대 (Slot 5)</option>
+                                    <option value="6">6번 수대 (Slot 6)</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="filter-spc-pallet">파렛트 번호 필터</label>
+                                <select id="filter-spc-pallet" class="form-select">
+                                    <option value="">전체 파렛트</option>
+                                    <!-- Dynamic -->
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="input-z-threshold">가공시간 이상치 기준 (Z-Score)</label>
+                                <input type="number" id="input-z-threshold" class="form-input" value="3.0" step="0.5" min="1.0" max="6.0">
+                            </div>
+                            <div class="control-group align-end" style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex-grow: 0;">
+                                <button class="btn btn-primary btn-control-action" id="btn-recalculate-spc">
+                                    <i data-lucide="rotate-cw"></i>
+                                    <span>설정 재적용</span>
+                                </button>
+
+                                <!-- Report Generator Dropdown -->
+                                <div class="report-dropdown-wrapper" style="position: relative; display: inline-block;">
+                                    <button class="btn btn-secondary btn-control-action" id="btn-toggle-spc-report-menu">
+                                        <i data-lucide="printer"></i>
+                                        <span>리포트 출력</span>
+                                        <i data-lucide="chevron-down" style="width: 12px; height: 12px; margin-left: 2px;"></i>
+                                    </button>
+                                    <div class="report-menu-popover" id="spc-report-menu" style="display: none;">
+                                        <button class="report-menu-item" id="btn-report-spc-single">
+                                            <i data-lucide="file-text"></i>
+                                            <span>현재 항목 리포트 (A4 가로 1장)</span>
+                                        </button>
+                                        <button class="report-menu-item" id="btn-report-spc-batch">
+                                            <i data-lucide="layers"></i>
+                                            <span>전공정 일괄 리포트 (A4 가로 N장)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SPC KPI Dashboard -->
+                    <div class="spc-meta-grid" id="spc-meta-grid" style="display: none;">
+                        <div class="meta-card">
+                            <div class="meta-val" id="spc-meta-mean">0.000</div>
+                            <div class="meta-lbl">측정 평균 (Mean)</div>
+                        </div>
+                        <div class="meta-card">
+                            <div class="meta-val" id="spc-meta-std">0.0000</div>
+                            <div class="meta-lbl">표준편차 (Std Dev)</div>
+                        </div>
+                        <div class="meta-card" id="spc-usl-card" title="규격 상한선 (USL) - 없으면 클릭하여 직접 입력">
+                            <div class="meta-val" id="spc-meta-usl">없음</div>
+                            <div class="meta-lbl">규격 상한선 (USL) <span id="usl-edit-hint" style="font-size:9px;color:var(--accent-blue);display:none;">✏ 클릭 입력</span></div>
+                        </div>
+                        <div class="meta-card" id="spc-lsl-card" title="규격 하한선 (LSL) - 없으면 클릭하여 직접 입력">
+                            <div class="meta-val" id="spc-meta-lsl">없음</div>
+                            <div class="meta-lbl">규격 하한선 (LSL) <span id="lsl-edit-hint" style="font-size:9px;color:var(--accent-blue);display:none;">✏ 클릭 입력</span></div>
+                        </div>
+                        <div class="meta-card highlight" id="spc-cp-card">
+                            <div class="meta-val" id="spc-meta-cp">0.00</div>
+                            <div class="meta-lbl">공정 능력 (Cp)</div>
+                        </div>
+                        <div class="meta-card highlight" id="spc-cpk-card">
+                            <div class="meta-val" id="spc-meta-cpk">0.00</div>
+                            <div class="meta-lbl">치우침 공정 능력 (Cpk)</div>
+                        </div>
+                    </div>
+
+                    <!-- SPC Main Charts -->
+                    <div class="spc-grid">
+                        <div class="dashboard-card span-3">
+                            <div class="card-header" style="flex-wrap: wrap; gap: 10px; align-items: center;">
+                                <h3 class="card-title-text" id="spc-chart-title" style="margin-right: 8px;">측정값 수대별 분포 및 공정관리도</h3>
+                                
+                                <!-- Mode Selector Toggle Buttons -->
+                                <div class="btn-group" id="spc-view-mode-group">
+                                    <button class="btn-toggle active" id="btn-mode-slot-scatter" data-mode="slot-scatter">
+                                        <i data-lucide="sparkles"></i>
+                                        <span>수대별 분포 (산점도)</span>
+                                    </button>
+                                    <button class="btn-toggle" id="btn-mode-spc-line" data-mode="spc-line">
+                                        <i data-lucide="activity"></i>
+                                        <span>SPC 관리도 (꺾은선)</span>
+                                    </button>
+                                </div>
+
+                                <!-- Anomaly Navigator (NEW) -->
+                                <div class="anomaly-nav-group" id="anomaly-nav-group" title="이상치(NG/Warning) 발생 지점으로 즉시 이동">
+                                    <span class="anomaly-nav-label">
+                                        <i data-lucide="zap" style="color: var(--accent-red); width: 14px; height: 14px;"></i>
+                                        <span>이상치 마그넷:</span>
+                                    </span>
+                                    <button class="btn-icon-nav" id="btn-anomaly-prev" title="이전 이상치">
+                                        <i data-lucide="chevron-left"></i>
+                                    </button>
+                                    <span class="anomaly-nav-counter" id="anomaly-counter-text">0 / 0</span>
+                                    <button class="btn-icon-nav" id="btn-anomaly-next" title="다음 이상치">
+                                        <i data-lucide="chevron-right"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Excel-style Y-Axis Range & Unit Settings (NEW) -->
+                                <div class="yaxis-control-group" id="yaxis-control-group">
+                                    <button class="btn btn-secondary btn-sm" id="btn-toggle-yaxis-panel">
+                                        <i data-lucide="sliders"></i>
+                                        <span>Y축 서식</span>
+                                    </button>
+                                    <div class="yaxis-popover" id="yaxis-popover" style="display: none;">
+                                        <div class="yaxis-popover-header">
+                                            <span>📊 Y축 눈금 및 규격 범위 설정</span>
+                                        </div>
+                                        <div class="yaxis-inputs-row">
+                                            <div class="yaxis-input-item">
+                                                <label for="input-yaxis-min">최소값 (Min)</label>
+                                                <input type="number" id="input-yaxis-min" class="form-input form-input-sm" placeholder="자동" step="any">
+                                            </div>
+                                            <div class="yaxis-input-item">
+                                                <label for="input-yaxis-max">최대값 (Max)</label>
+                                                <input type="number" id="input-yaxis-max" class="form-input form-input-sm" placeholder="자동" step="any">
+                                            </div>
+                                            <div class="yaxis-input-item">
+                                                <label for="input-yaxis-step">주 단위 간격 (Step)</label>
+                                                <input type="number" id="input-yaxis-step" class="form-input form-input-sm" placeholder="자동" step="any">
+                                            </div>
+                                        </div>
+                                        <div class="yaxis-actions-row">
+                                            <button class="btn btn-primary btn-sm" id="btn-apply-yaxis">적용</button>
+                                            <button class="btn btn-secondary btn-sm" id="btn-reset-yaxis">자동 (초기화)</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-actions slot-legend-container" id="spc-slot-legend" style="margin-left: auto;">
+                                    <span class="badge badge-info" style="font-size: 11px; padding: 4px 8px;">
+                                        <i data-lucide="magnet" style="width: 12px; height: 12px; margin-right: 3px;"></i>
+                                        이상치 마그넷 흡착 활성화됨
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="chart-container-large" id="chart-spc-control"></div>
+                        </div>
+
+                        <!-- Cpk Capability Histogram Card (NEW) -->
+                        <div class="dashboard-card span-3">
+                            <div class="card-header">
+                                <h3 class="card-title-text">
+                                    <i data-lucide="bar-chart-2" style="color: var(--accent-cyan); margin-right: 6px;"></i>
+                                    <span>치우침 공정능력(Cpk) 및 측정값 데이터 분포 히스토그램</span>
+                                </h3>
+                                <div class="card-actions">
+                                    <span class="legend-dot blue"></span> 측정치 분포 (Histogram)
+                                    <span class="legend-dot green ml-2"></span> 정규분포 곡선 (Normal Curve)
+                                    <span class="legend-dot red ml-2"></span> 규격선 (USL / LSL)
+                                </div>
+                            </div>
+                            <div class="chart-container-large" id="chart-spc-histogram"></div>
+                        </div>
+
+                        <div class="dashboard-card span-1">
+                            <div class="card-header">
+                                <h3 class="card-title-text">슬롯(수대)별 공정능력지수(Cpk) 비교</h3>
+                            </div>
+                            <div class="chart-container" id="chart-spc-cpk-comparison"></div>
+                        </div>
+
+                        <div class="dashboard-card span-2">
+                            <div class="card-header">
+                                <h3 class="card-title-text">공정 전체 검사 항목별 공정능력지수(Cpk) 비교</h3>
+                            </div>
+                            <div class="chart-container" id="chart-spc-all-cpk"></div>
+                        </div>
+                    </div>
+
+                    <!-- Anomalies Table -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h3 class="card-title-text">감지된 품질/공정 규격 이탈 리스트</h3>
+                            <button class="btn btn-secondary btn-sm" id="btn-export-anomalies">
+                                <i data-lucide="download"></i>
+                                <span>CSV 내보내기</span>
+                            </button>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="table-anomalies">
+                                <thead>
+                                    <tr>
+                                        <th>No.</th>
+                                        <th>QRCODE</th>
+                                        <th>투입시각</th>
+                                        <th>측정 항목</th>
+                                        <th>측정값</th>
+                                        <th>규격 범위 (LSL~USL)</th>
+                                        <th>이상 구분</th>
+                                        <th>상태/영향</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">측정 항목을 선택하면 이상 목록이 실시간 추출됩니다.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 3: QUALITY & PART ANALYSIS -->
+                <section id="view-quality" class="view-section">
+                    <!-- Quality Control Panel -->
+                    <div class="control-panel-card">
+                        <div class="control-row">
+                            <div class="control-group">
+                                <label for="select-quality-parameter">분석할 측정 검사 항목</label>
+                                <select id="select-quality-parameter" class="form-select">
+                                    <option value="">-- 측정 항목을 선택하세요 --</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label for="select-quality-heatmap-mode">히트맵 표시 모드</label>
+                                <select id="select-quality-heatmap-mode" class="form-select">
+                                    <option value="ng">수량 기준 (불량 개수 분포)</option>
+                                    <option value="measure">측정치 기준 (평균 편차 비교)</option>
+                                </select>
+                            </div>
+                            <div class="control-group align-end" style="display: flex; flex-direction: row; align-items: center; gap: 6px; flex-grow: 0;">
+                                <!-- Quality Report Generator Dropdown -->
+                                <div class="report-dropdown-wrapper" style="position: relative; display: inline-block;">
+                                    <button class="btn btn-secondary btn-control-action" id="btn-toggle-quality-report-menu">
+                                        <i data-lucide="printer"></i>
+                                        <span>리포트 출력 (PDF 저장)</span>
+                                        <i data-lucide="chevron-down" style="width: 12px; height: 12px; margin-left: 2px;"></i>
+                                    </button>
+                                    <div class="report-menu-popover" id="quality-report-menu" style="display: none;">
+                                        <button class="report-menu-item" id="btn-report-quality-single">
+                                            <i data-lucide="file-text"></i>
+                                            <span>현재 항목 설비요소 리포트 (A4 가로 1장)</span>
+                                        </button>
+                                        <button class="report-menu-item" id="btn-report-quality-batch">
+                                            <i data-lucide="layers"></i>
+                                            <span>전공정 일괄 설비요소 리포트 (A4 가로 N장)</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quality-grid">
+                        <div class="dashboard-card span-2">
+                            <div class="card-header">
+                                <h3 class="card-title-text" id="quality-deviation-title">슬롯(수대)별 측정 평균 및 최대/최소 편차 비교</h3>
+                            </div>
+                            <div class="chart-container" id="chart-quality-pareto"></div>
+                        </div>
+
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h3 class="card-title-text">LMS 수대 및 파렛트 진단 인사이트</h3>
+                            </div>
+                            <div class="insight-container" id="quality-insights">
+                                <div class="insight-card info">
+                                    <div class="insight-icon"><i data-lucide="info"></i></div>
+                                    <div class="insight-body">
+                                        <div class="insight-title">데이터를 로드해 주세요</div>
+                                        <div class="insight-desc">데이터 가져오기 탭에서 FMS DB를 로딩하면 파렛트 및 수대 결함 패턴 진단 결과가 여기에 나타납니다.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card span-3">
+                            <div class="card-header">
+                                <h3 class="card-title-text">수대(Slot_No) - 파렛트 번호(MAIN_PLT_NO) 불량 분포 히트맵 (6x30 Grid)</h3>
+                            </div>
+                            <div class="chart-container-large" id="chart-quality-heatmap"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- VIEW 4: FILE IMPORT & MAPPING -->
+                <section id="view-import" class="view-section">
+                    <!-- Drop Zone -->
+                    <div class="import-layout">
+                        <div class="import-left">
+                            <div class="upload-dropzone" id="upload-dropzone">
+                                <div class="dropzone-content">
+                                    <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+                                    <h3>FMS 데이터 파일 드래그 앤 드롭</h3>
+                                    <p class="dropzone-text">CSV 또는 Excel (.xlsx, .xls) 형식 파일을 이곳에 올려놓으세요.</p>
+                                    <p class="dropzone-sub">인코딩 형식(EUC-KR, UTF-8)은 자동으로 판별됩니다.</p>
+                                    <button class="btn btn-primary" id="btn-browse-file">
+                                        <i data-lucide="folder-open"></i>
+                                        <span>파일 찾아보기</span>
+                                    </button>
+                                    <input type="file" id="file-input" style="display: none;" accept=".csv,.xlsx,.xls">
+                                </div>
+                            </div>
+
+                            <div class="mock-data-card">
+                                <h3>기본 데이터가 없으신가요?</h3>
+                                <p>개발 확인용으로 고장 및 공구 마모 트렌드가 반영된 1,000건의 고품질 가상 FMS 시뮬레이션 데이터를 즉시 생성하여 테스트해 볼 수 있습니다.</p>
+                                <button class="btn btn-secondary w-full" id="btn-generate-mock">
+                                    <i data-lucide="sparkles"></i>
+                                    <span>시뮬레이션 데이터 생성</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="import-right">
+                            <!-- File Meta Card -->
+                            <div class="dashboard-card" id="file-meta-card" style="display: none;">
+                                <div class="card-header">
+                                    <h3 class="card-title-text">가져온 파일 정보</h3>
+                                </div>
+                                <div class="meta-info-list">
+                                    <div class="meta-item">
+                                        <span class="meta-label">파일명:</span>
+                                        <span class="meta-val" id="meta-file-name">-</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">파일 크기:</span>
+                                        <span class="meta-val" id="meta-file-size">-</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">데이터 행 수:</span>
+                                        <span class="meta-val" id="meta-file-rows">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Column Mapping UI -->
+                            <div class="dashboard-card" id="column-mapper-card" style="display: none;">
+                                <div class="card-header">
+                                    <h3 class="card-title-text">데이터 컬럼 역할 매핑</h3>
+                                    <span class="badge badge-info">필수 지정</span>
+                                </div>
+                                <div class="mapper-form">
+                                    <p class="mapper-desc">업로드하신 파일의 열 헤더를 FMS 분석 항목에 연결해 주세요.</p>
+                                    
+                                    <div class="form-group-horizontal">
+                                        <label for="map-qrcode">제품 일련번호 / QR코드</label>
+                                        <select id="map-qrcode" class="form-select mapper-select"></select>
+                                    </div>
+                                    
+                                    <div class="form-group-horizontal">
+                                        <label for="map-time-first">가공 시작 시간 (FIRST_IN)</label>
+                                        <select id="map-time-first" class="form-select mapper-select"></select>
+                                    </div>
+
+                                    <div class="form-group-horizontal">
+                                        <label for="map-time-last">가공 종료 시간 (LAST_IN)</label>
+                                        <select id="map-time-last" class="form-select mapper-select"></select>
+                                    </div>
+
+                                    <div class="form-group-horizontal">
+                                        <label for="map-judgement">종합 품질 판정 (OK/NG)</label>
+                                        <select id="map-judgement" class="form-select mapper-select"></select>
+                                    </div>
+
+                                    <div class="form-group-horizontal">
+                                        <label for="map-machine-factor">설비 구성 요소 (Slot 또는 PLT)</label>
+                                        <select id="map-machine-factor" class="form-select mapper-select"></select>
+                                    </div>
+
+                                    <div class="mapper-actions mt-4">
+                                        <button class="btn btn-primary w-full" id="btn-apply-mapping">
+                                            <i data-lucide="check"></i>
+                                            <span>매핑 적용 및 데이터 분석 시작</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Table -->
+                    <div class="dashboard-card mt-4" id="data-preview-card" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title-text">데이터 미리보기 (상위 5개 행)</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table preview-table" id="table-preview">
+                                <thead>
+                                    <!-- Dynamic -->
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Report Print Preview Modal (A4 Landscape) -->
+    <div class="report-modal-backdrop" id="report-modal" style="display: none;">
+        <div class="report-modal-wrapper">
+            <!-- Modal Header (Non-printed) -->
+            <div class="report-modal-header no-print">
+                <div class="report-modal-title">
+                    <i data-lucide="file-check" style="color: var(--accent-cyan); width: 18px; height: 18px;"></i>
+                    <span id="report-modal-heading">📊 FMS 공정품질 및 설비요소 분석 보고서 미리보기 (A4 가로 규격)</span>
+                </div>
+                <div class="report-modal-actions">
+                    <button class="btn btn-primary btn-sm" id="btn-print-report">
+                        <i data-lucide="printer"></i>
+                        <span>인쇄 / PDF 저장 (Ctrl+P)</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btn-close-report-modal">
+                        <i data-lucide="x"></i>
+                        <span>닫기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable Paper Container -->
+            <div class="report-paper-container" id="report-paper-container">
+                <!-- Dynamic Report Pages Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Application scripts -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

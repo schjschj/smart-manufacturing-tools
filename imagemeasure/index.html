@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NanoMeasure Defect 결함 치수 측정 시스템</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts for Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- FontAwesome for sleek icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- jsPDF & html2canvas for Perfect Korean PDF Report Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Navbar -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="logo-icon">
+          <i class="fa-solid fa-ruler-combined"></i>
+        </div>
+        <div class="brand-text">
+          <h1>NanoMeasure Defect <span>결함 치수 측정 시스템</span></h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="loadSampleBtn" class="btn btn-outline" title="작업 폴더의 샘플 이미지를 바로 읽어옵니다">
+          <i class="fa-solid fa-file-image"></i> 샘플 이미지 로드
+        </button>
+
+        <label for="imageFileInput" class="btn btn-primary" id="uploadBtnLabel">
+          <i class="fa-solid fa-cloud-arrow-up"></i> 이미지 업로드
+        </label>
+        <input type="file" id="imageFileInput" accept="image/*,.png,.jpg,.jpeg,.bmp,.webp" multiple class="hidden-file-input">
+
+        <div class="divider-v"></div>
+
+        <button id="exportPngBtn" class="btn btn-secondary" disabled>
+          <i class="fa-solid fa-download"></i> PNG 저장
+        </button>
+        <button id="exportCsvBtn" class="btn btn-secondary" disabled>
+          <i class="fa-solid fa-file-csv"></i> CSV 내보내기
+        </button>
+        <button id="exportPdfBtn" class="btn btn-accent" disabled title="품질 검사 PDF 보고서 자동 생성 (한글 완벽 지원)">
+          <i class="fa-solid fa-file-pdf"></i> PDF 보고서
+        </button>
+
+        <div class="divider-v"></div>
+
+        <button id="showShortcutsBtn" class="btn btn-secondary btn-icon-only" title="단축키 안내 (Keyboard Shortcuts)">
+          <i class="fa-solid fa-keyboard"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Sub-Header Toolbar (Fixed right below Header) -->
+    <div class="canvas-toolbar-top" id="canvasToolbar">
+      <div class="toolbar-content" id="toolbarContent">
+        <div class="tool-group mode-toggle-group">
+          <button id="modeCalibrateBtn" class="tool-btn active" title="1. 전장 캘리브레이션 (단축키: C)">
+            <i class="fa-solid fa-vector-square"></i> 1. 캘리브레이션
+          </button>
+          <button id="modeMeasureBtn" class="tool-btn" title="2. 결함 측정 (단축키: M)">
+            <i class="fa-solid fa-arrows-left-right-to-line"></i> 2. 결함 측정
+          </button>
+        </div>
+
+        <!-- Sub-Tool Measurement Selector -->
+        <div class="tool-group measure-subtool-group" id="measureSubtoolGroup" style="display: none;">
+          <div class="divider-v"></div>
+          <button id="toolLineBtn" class="subtool-btn active" title="직선 측정 (시작점 → 끝점)">
+            <i class="fa-solid fa-slash"></i> 직선
+          </button>
+          <button id="toolPolylineBtn" class="subtool-btn" title="다점/곡선 측정 (클릭 연결, 더블클릭 완결)">
+            <i class="fa-solid fa-route"></i> 곡선
+          </button>
+          <button id="toolRectBtn" class="subtool-btn" title="직사각형 측정 (대각선 2클릭)">
+            <i class="fa-regular fa-square"></i> 사각형
+          </button>
+          <button id="toolCircleBtn" class="subtool-btn" title="원/반경 측정 (중심점 → 테두리 2클릭)">
+            <i class="fa-regular fa-circle"></i> 원/반경
+          </button>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <div class="tool-group view-control-group">
+          <button id="zoomInBtn" class="tool-btn-icon" title="확대 (+ / Z)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+          <span id="zoomLevelDisplay" class="zoom-indicator">100%</span>
+          <button id="zoomOutBtn" class="tool-btn-icon" title="축소 (- / X)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+          <button id="resetViewBtn" class="tool-btn-icon" title="화면 리셋"><i class="fa-solid fa-expand"></i></button>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <!-- Precision Selector -->
+        <div class="tool-group precision-group" title="표시 치수 정밀도 (소수점 자릿수)">
+          <i class="fa-solid fa-calculator text-size-icon"></i>
+          <span class="tool-label">정밀도</span>
+          <select id="precisionSelect" class="form-control-sm">
+            <option value="0.1">0.1</option>
+            <option value="0.01">0.01</option>
+            <option value="0.001" selected>0.001 (기본)</option>
+            <option value="0.0001">0.0001</option>
+          </select>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <!-- Image Adjustment (Brightness & Contrast) -->
+        <div class="tool-group img-adjust-group">
+          <i class="fa-solid fa-sun text-size-icon" title="이미지 화질 (밝기/선명도)"></i>
+          <span class="tool-label">밝기</span>
+          <input type="range" id="brightnessSlider" min="50" max="200" value="100" step="5" style="width: 45px;" title="밝기 조절 (50%~200%)">
+          <span class="tool-label">대비</span>
+          <input type="range" id="contrastSlider" min="50" max="200" value="100" step="5" style="width: 45px;" title="선명도/대비 조절 (50%~200%)">
+          <button id="resetImgAdjustBtn" class="tool-btn-icon" title="화질 리셋"><i class="fa-solid fa-rotate-left"></i></button>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <!-- Text Size Adjuster (Min: 7px) -->
+        <div class="tool-group text-size-group" title="측정 라벨 글자 크기 (7px~36px)">
+          <i class="fa-solid fa-font text-size-icon"></i>
+          <input type="range" id="textSizeSlider" min="7" max="36" value="14" step="1" style="width: 45px;">
+          <span id="textSizeDisplay" class="text-size-val">14px</span>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <!-- Toggles (Edge Snap, Loupe, Bbox, Measurement Lines) -->
+        <div class="tool-group option-toggle-group">
+          <label class="toggle-switch-label" title="픽셀 대비 기반 엣지 자석 자동 스냅">
+            <input type="checkbox" id="toggleEdgeSnapCheck" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-text"><i class="fa-solid fa-magnet"></i> 엣지 스냅</span>
+          </label>
+          <label class="toggle-switch-label" title="돋보기 미니 창 켜기/끄기">
+            <input type="checkbox" id="toggleLoupeCheck" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-text"><i class="fa-solid fa-eye"></i> 돋보기</span>
+          </label>
+          <label class="toggle-switch-label" title="전장 바운딩 박스 표시">
+            <input type="checkbox" id="toggleBboxCheck" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">전장 프레임</span>
+          </label>
+          <label class="toggle-switch-label" title="측정된 결함선 전체 표시/숨기기">
+            <input type="checkbox" id="toggleDefectLinesCheck" checked>
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">측정선 전체</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area (3-Column Layout: Left Controls & Queue | Canvas | Right Defects & Loupe) -->
+    <main class="main-content">
+      <!-- Left Sidebar Panel (1. Calibration, 2. Fine-Tuning, 4. Multi-Image Queue) -->
+      <aside class="sidebar-panel-left">
+        <!-- 1. Calibration Settings Card -->
+        <div class="card calib-card" id="cardCalib">
+          <div class="card-header clickable-header">
+            <h3><i class="fa-solid fa-sliders"></i> 1. 제품 전장 캘리브레이션</h3>
+            <i class="fa-solid fa-chevron-down card-toggle-icon"></i>
+          </div>
+          <div class="card-body">
+            <!-- Preset Selection Group -->
+            <div class="form-row" style="margin-bottom: 8px;">
+              <div class="form-group full-width">
+                <label for="presetSelect"><i class="fa-solid fa-bookmark"></i> 제품 캘리브레이션 프리셋</label>
+                <div class="input-with-button">
+                  <select id="presetSelect" class="form-control" style="flex: 1;">
+                    <option value="">-- 프리셋 선택 --</option>
+                  </select>
+                  <button id="savePresetBtn" class="btn btn-sm btn-primary" title="현재 설정을 프리셋으로 저장"><i class="fa-solid fa-plus"></i></button>
+                  <button id="deletePresetBtn" class="btn btn-sm btn-danger-outline" title="선택한 프리셋 삭제"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="realWidthInput"><i class="fa-solid fa-arrows-left-right"></i> 실제 가로 전장</label>
+                <input type="number" id="realWidthInput" placeholder="예: 30.0" step="any" min="0.0001" value="30.0">
+              </div>
+
+              <div class="form-group">
+                <label for="realHeightInput"><i class="fa-solid fa-arrows-up-down"></i> 실제 세로 전장</label>
+                <input type="number" id="realHeightInput" placeholder="예: 15.0" step="any" min="0.0001" value="15.0">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="unitSelect"><i class="fa-solid fa-ruler-horizontal"></i> 측정 단위</label>
+                <select id="unitSelect" class="form-control">
+                  <option value="mm" selected>밀리미터 (mm)</option>
+                  <option value="um">마이크로미터 (µm)</option>
+                  <option value="cm">센티미터 (cm)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Calibration Persistence Toggle -->
+            <div class="form-row" style="margin-top: 6px; margin-bottom: 6px;">
+              <label class="toggle-switch-label" title="새 이미지를 로드할 때도 설정된 캘리브레이션을 자동으로 유지합니다">
+                <input type="checkbox" id="preserveCalibCheck" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-text"><i class="fa-solid fa-lock"></i> 이미지 변경 시 캘리브레이션 유지</span>
+              </label>
+            </div>
+
+            <div class="bbox-info-box">
+              <div class="info-row">
+                <span>픽셀 크기:</span>
+                <strong id="bboxPxDims">0 x 0 px</strong>
+              </div>
+              <div class="info-row highlight">
+                <span>스케일:</span>
+                <strong id="scaleRatioDisplay">-- px/unit</strong>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <button id="applyCalibBtn" class="btn btn-block btn-accent btn-compact">
+                <i class="fa-solid fa-check-double"></i> 캘리브레이션 적용
+              </button>
+              <button id="resetCalibBtn" class="btn btn-secondary btn-compact" title="캘리브레이션 초기화">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Fine-Tuning Calibration Card -->
+        <div class="card fine-tune-card" id="cardFineTune">
+          <div class="card-header clickable-header">
+            <h3><i class="fa-solid fa-bullseye"></i> 2. 연산 보정 (Fine Tuning)</h3>
+            <i class="fa-solid fa-chevron-down card-toggle-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label for="fineTuneDefectSelect">보정 기준 결함 항목</label>
+                <select id="fineTuneDefectSelect" class="form-control">
+                  <option value="">-- 결함 선택 --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>계산값</label>
+                <input type="text" id="fineTuneCurrentValue" value="-- mm" readonly style="background: rgba(0,0,0,0.5); color: #94a3b8;">
+              </div>
+              <div class="form-group">
+                <label for="fineTuneTargetInput">실측 치수</label>
+                <input type="number" id="fineTuneTargetInput" placeholder="예: 5.0" step="any">
+              </div>
+            </div>
+
+            <div class="info-row fine-ratio-row">
+              <span>보정 계수:</span>
+              <strong id="fineFactorDisplay">1.0000x</strong>
+            </div>
+
+            <div class="form-row" style="margin-top: 6px;">
+              <button id="applyFineTuneBtn" class="btn btn-block btn-primary btn-compact">
+                <i class="fa-solid fa-sliders"></i> 보정 적용
+              </button>
+              <button id="resetFineTuneBtn" class="btn btn-secondary btn-compact" title="보정 리셋">
+                <i class="fa-solid fa-arrow-rotate-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Uploaded Multi-Image Queue Card (Expanded for 10+ items) -->
+        <div class="card image-list-card" id="cardImageList">
+          <div class="card-header clickable-header">
+            <h3><i class="fa-solid fa-images"></i> 4. 업로드 이미지 목록</h3>
+            <div>
+              <span class="count-badge" id="imageCountBadge">0개</span>
+              <i class="fa-solid fa-chevron-down card-toggle-icon" style="margin-left: 6px;"></i>
+            </div>
+          </div>
+          <div class="card-body padding-0">
+            <div class="image-queue-container" id="imageQueueContainer">
+              <ul class="image-queue-list" id="imageQueueList">
+                <li class="empty-queue-msg">업로드된 이미지가 없습니다.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Canvas Workspace Area -->
+      <section class="workspace-area">
+        <!-- Canvas Container with Dropzone -->
+        <div class="canvas-wrapper" id="canvasWrapper">
+          <canvas id="mainCanvas"></canvas>
+
+          <!-- Empty State Overlay -->
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon"><i class="fa-solid fa-image"></i></div>
+            <h3>측정할 이미지를 불러오세요</h3>
+            <p>이미지 파일들을 이곳에 드래그&드롭하거나 아래 버튼을 클릭하세요.</p>
+            <label for="imageFileInput" class="btn btn-primary" style="display: inline-flex; cursor: pointer;">
+              <i class="fa-solid fa-folder-open"></i> 이미지 선택
+            </label>
+          </div>
+        </div>
+
+        <!-- Canvas Footer / Status bar -->
+        <div class="canvas-statusbar">
+          <div class="status-item">
+            <i class="fa-solid fa-crosshairs"></i> 좌표: <span id="cursorPosDisplay">X: 0, Y: 0 px</span>
+          </div>
+          <div class="status-item">
+            <i class="fa-solid fa-ruler"></i> 캘리브레이션: 
+            <span id="calibStatusBadge" class="status-badge uncalibrated">미완료</span>
+          </div>
+          <div class="status-item">
+            <i class="fa-solid fa-circle-info"></i> 도움말: <span id="helpTextDisplay">이미지를 로드한 후 제품의 전장 영역을 맞추세요.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar Panel (50/50 Split: Defect List Top | Loupe Bottom) -->
+      <aside class="sidebar-panel-right">
+        <!-- Top Half: 3. Defect Measurement List Card -->
+        <div class="card defects-card" id="cardDefects">
+          <div class="card-header clickable-header">
+            <h3><i class="fa-solid fa-list-check"></i> 결함 측정목록</h3>
+            <div>
+              <span class="count-badge" id="defectCountBadge">0건</span>
+              <i class="fa-solid fa-chevron-down card-toggle-icon" style="margin-left: 6px;"></i>
+            </div>
+          </div>
+          <div class="card-body padding-0">
+            <div class="table-container">
+              <table class="defect-table" id="defectTable">
+                <thead>
+                  <tr>
+                    <th style="width: 32px;">표시</th>
+                    <th style="width: 35px;">#</th>
+                    <th>실측 치수 (도구)</th>
+                    <th>메모 / 위치</th>
+                    <th style="width: 35px;">삭제</th>
+                  </tr>
+                </thead>
+                <tbody id="defectTableBody">
+                  <tr class="empty-row">
+                    <td colspan="5">
+                      <div class="empty-table-msg">
+                        <i class="fa-solid fa-ruler-vertical"></i><br>
+                        측정된 결함이 없습니다.<br>
+                        도구를 선택하여 측정하세요.
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button id="clearDefectsBtn" class="btn btn-sm btn-danger-outline" disabled>
+              <i class="fa-solid fa-trash-can"></i> 전체 삭제
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom Half: Magnifier Loupe Card (Full Fill Viewport with Centered Red Crosshair) -->
+        <div class="card loupe-sidebar-card" id="loupeContainer">
+          <div class="card-header clickable-header">
+            <h3><i class="fa-solid fa-magnifying-glass"></i> 돋보기</h3>
+            <span id="currentZoomBadge" class="count-badge" style="background: var(--primary);">5x</span>
+          </div>
+          <div class="card-body loupe-card-body">
+            <div class="loupe-canvas-wrapper">
+              <canvas id="loupeCanvas" width="300" height="240"></canvas>
+              <div class="loupe-crosshair"></div>
+            </div>
+            <div class="loupe-zoom-buttons">
+              <button class="loupe-zoom-btn" data-zoom="2">2x</button>
+              <button class="loupe-zoom-btn active" data-zoom="5">5x</button>
+              <button class="loupe-zoom-btn" data-zoom="10">10x</button>
+              <button class="loupe-zoom-btn" data-zoom="20">20x</button>
+              <button class="loupe-zoom-btn" data-zoom="100">100x</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-overlay" id="shortcutsModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-keyboard"></i> 키보드 단축키 안내</h3>
+        <button class="modal-close-btn" id="closeShortcutsModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul class="shortcut-list">
+          <li><span class="kbd-key">Space</span> + 드래그: 화면 자유 이동 (Pan)</li>
+          <li><span class="kbd-key">Z</span> : 캔버스 확대 / <span class="kbd-key">X</span> : 캔버스 축소</li>
+          <li><span class="kbd-key">C</span> : 1. 캘리브레이션 모드 전환</li>
+          <li><span class="kbd-key">M</span> : 2. 결함 측정 모드 전환</li>
+          <li><span class="kbd-key">Ctrl</span> + <span class="kbd-key">Z</span> : 최근 측정한 결함 취소 (Undo)</li>
+          <li><span class="kbd-key">Delete</span> / <span class="kbd-key">Backspace</span> : 결함 삭제</li>
+          <li><span class="kbd-key">Esc</span> : 측정 진행 취소</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

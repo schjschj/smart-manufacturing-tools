@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>이미지 일괄 변환기 | Batch Image Converter</title>
+  <meta name="description" content="폴더 내 이미지를 원하는 해상도·품질·포맷으로 일괄 변환 및 인원별 자동 분배 도구" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════
+       Theme Variables (Light default & Dark)
+    ═══════════════════════════════════════════════ */
+    :root, :root[data-theme="light"] {
+      --bg-base:      #f4f6fb;
+      --bg-surface:   #ffffff;
+      --bg-card:      #ffffff;
+      --bg-input:     #f0f3fa;
+      --border:       #e2e8f0;
+      --border-hi:    #6366f1;
+      --accent:       #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-2:     #8b5cf6;
+      --accent-glow:  rgba(79, 70, 229, 0.15);
+      --success:      #10b981;
+      --warning:      #f59e0b;
+      --danger:       #ef4444;
+      --text-1:       #0f172a;
+      --text-2:       #475569;
+      --text-3:       #94a3b8;
+      --radius:       12px;
+      --radius-sm:    8px;
+      --shadow:       0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      --header-bg:    rgba(255, 255, 255, 0.85);
+      --sidebar-bg:   #ffffff;
+    }
+
+    :root[data-theme="dark"] {
+      --bg-base:      #0b0e17;
+      --bg-surface:   #131826;
+      --bg-card:      #181e30;
+      --bg-input:     #20273d;
+      --border:       #2d3550;
+      --border-hi:    #6366f1;
+      --accent:       #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-2:     #a855f7;
+      --accent-glow:  rgba(99, 102, 241, 0.25);
+      --success:      #34d399;
+      --warning:      #fbbf24;
+      --danger:       #f87171;
+      --text-1:       #f8fafc;
+      --text-2:       #cbd5e1;
+      --text-3:       #64748b;
+      --radius:       12px;
+      --radius-sm:    8px;
+      --shadow:       0 10px 30px rgba(0, 0, 0, 0.4);
+      --header-bg:    rgba(19, 24, 38, 0.85);
+      --sidebar-bg:   #131826;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-1);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      transition: background 0.25s ease, color 0.25s ease;
+    }
+
+    /* ═══════════════════════════════════════════════
+       1. Top Header Bar (48px Slim)
+    ═══════════════════════════════════════════════ */
+    .top-header {
+      height: 48px;
+      background: var(--header-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-logo .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-1);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════════
+       2. Layout Grid (Fixed Sidebar + Main Area)
+    ═══════════════════════════════════════════════ */
+    .app-body {
+      display: flex;
+      flex: 1;
+      min-height: calc(100vh - 48px);
+    }
+
+    .sidebar {
+      width: 250px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: sticky;
+      top: 48px;
+      height: calc(100vh - 48px);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .nav-group {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+    .nav-group.active-group {
+      border-color: var(--accent);
+    }
+
+    .nav-header {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-input);
+      border: none;
+      color: var(--text-1);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+    }
+    .nav-header .title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-header .arrow {
+      font-size: 0.75rem;
+      transition: transform 0.2s ease;
+      color: var(--text-3);
+    }
+    .nav-group.open .nav-header .arrow {
+      transform: rotate(90deg);
+    }
+
+    .nav-items {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+    }
+    .nav-group.open .nav-items {
+      max-height: 300px;
+    }
+
+    .nav-item-btn {
+      padding: 8px 12px 8px 32px;
+      background: transparent;
+      border: none;
+      color: var(--text-2);
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .nav-item-btn:hover {
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       3. Cards & Form Controls
+    ═══════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: background 0.25s, border-color 0.25s;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    label .badge {
+      font-size: 0.72rem;
+      font-weight: 400;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-3);
+      padding: 1px 6px;
+      border-radius: 100px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-1);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Folder Button */
+    .folder-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-input);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-size: 0.85rem;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .folder-btn:hover {
+      border-color: var(--accent);
+      color: var(--text-1);
+      background: var(--bg-surface);
+    }
+    .folder-path-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--success);
+      padding: 6px 10px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 6px;
+      word-break: break-all;
+      margin-top: 4px;
+      display: none;
+    }
+    .folder-path-display.visible { display: block; }
+
+    /* Size Inputs */
+    .size-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .size-sep { color: var(--text-3); font-weight: 600; text-align: center; }
+
+    /* Format Selection Pills */
+    .format-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .fmt-pill {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 8px 4px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s ease;
+    }
+    .fmt-pill:hover { border-color: var(--accent); color: var(--text-1); }
+    .fmt-pill.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+
+    /* Quality 5 Steps */
+    .quality-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .q-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 8px 2px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s ease;
+      line-height: 1.2;
+    }
+    .q-btn:hover { border-color: var(--accent); color: var(--text-1); }
+    .q-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 2px 10px var(--accent-glow);
+    }
+    .q-btn .q-num {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .toggle-wrap {
+      position: relative;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-track {
+      position: absolute; inset: 0;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 100px; cursor: pointer; transition: all 0.2s ease;
+    }
+    .toggle-track::after {
+      content: ''; position: absolute;
+      width: 12px; height: 12px; top: 3px; left: 3px;
+      background: var(--text-3); border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .toggle-wrap input:checked + .toggle-track {
+      background: var(--accent); border-color: var(--accent);
+    }
+    .toggle-wrap input:checked + .toggle-track::after {
+      transform: translateX(16px); background: #fff;
+    }
+
+    /* File Filter Tags */
+    .filter-tags {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+    }
+    .filter-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 100px; padding: 4px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--text-2);
+      cursor: pointer; transition: all 0.18s ease;
+    }
+    .filter-tag:hover { border-color: var(--accent); color: var(--text-1); }
+    .filter-tag.active {
+      background: var(--accent-glow);
+      border-color: var(--accent); color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Mode Radio Cards */
+    .save-mode-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .save-mode-card {
+      cursor: pointer;
+      position: relative;
+    }
+    .save-mode-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .save-mode-box {
+      padding: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .save-mode-box .sm-icon { font-size: 1.4rem; }
+    .save-mode-box .sm-title { font-size: 0.82rem; font-weight: 700; color: var(--text-1); }
+    .save-mode-box .sm-desc { font-size: 0.72rem; color: var(--text-3); line-height: 1.3; }
+    .save-mode-card input:checked + .save-mode-box {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+    }
+    .save-mode-card input:checked + .save-mode-box .sm-title { color: var(--accent); }
+
+    /* Action Buttons */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--accent-glow);
+    }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* File List & Allocation Preview */
+    .file-preview-list {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      padding: 10px;
+      color: var(--text-2);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .person-alloc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .person-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 0.78rem;
+    }
+    .person-card-title {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Progress & Summary */
+    .progress-bar-bg {
+      height: 8px;
+      background: var(--bg-input);
+      border-radius: 100px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .stat-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-card .val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .stat-card .lbl { font-size: 0.72rem; color: var(--text-3); margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Top Slim Header -->
+  <header class="top-header">
+    <div class="brand-logo">
+      <div class="logo-icon">🖼️</div>
+      <span id="appTitle">이미지 일괄 변환기</span>
+    </div>
+    <div class="header-actions">
+      <button class="toggle-btn" id="langToggleBtn" onclick="toggleLanguage()">
+        🌐 <span id="langLabel">English</span>
+      </button>
+      <button class="toggle-btn" id="themeToggleBtn" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span> <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. Main App Body -->
+  <div class="app-body">
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+
+      <div class="nav-group open" id="navGroup1">
+        <button class="nav-header" onclick="toggleNav('navGroup1')">
+          <span class="title-wrap">📁 <span data-i18n="nav1">폴더 및 파일</span></span>
+          <span class="arrow">▶</span>
+        </button>
+        <div class="nav-items">
+          <button class="nav-item-btn" onclick="scrollToSection('secFolder')">📂 <span data-i18n="nav1_1">소스 폴더 선택</span></button>
+          <button class="nav-item-btn" onclick="scrollToSection('secFilter')">🏷️ <span data-i18n="nav1_2">파일명 필터</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group open" id="navGroup2">
+        <button class="nav-header" onclick="toggleNav('navGroup2')">
+          <span class="title-wrap">⚙️ <span data-i18n="nav2">변환 설정</span></span>
+          <span class="arrow">▶</span>
+        </button>
+        <div class="nav-items">
+          <button class="nav-item-btn" onclick="scrollToSection('secSize')">📐 <span data-i18n="nav2_1">해상도 & 프리셋</span></button>
+          <button class="nav-item-btn" onclick="scrollToSection('secFormat')">🎨 <span data-i18n="nav2_2">포맷 & 품질</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group open" id="navGroup3">
+        <button class="nav-header" onclick="toggleNav('navGroup3')">
+          <span class="title-wrap">💾 <span data-i18n="nav3">저장 & 인원분배</span></span>
+          <span class="arrow">▶</span>
+        </button>
+        <div class="nav-items">
+          <button class="nav-item-btn" onclick="scrollToSection('secSaveMode')">🛠️ <span data-i18n="nav3_1">저장 방식 선택</span></button>
+          <button class="nav-item-btn" onclick="scrollToSection('secAlloc')">👥 <span data-i18n="nav3_2">인원별 할당 분배</span></button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- Section 1: Folder & File Filter -->
+      <section class="card" id="secFolder">
+        <div class="card-header">📂 <span data-i18n="sec1_title">폴더 및 파일 설정</span></div>
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label><span data-i18n="lbl_select_folder">작업 대상 폴더 선택</span> <span class="badge">Chrome/Edge</span></label>
+            <button class="folder-btn" onclick="selectSourceFolder()">
+              <span style="font-size:1.2rem">📁</span>
+              <span id="srcFolderText" data-i18n="btn_choose_folder">폴더를 선택하세요</span>
+            </button>
+            <div class="folder-path-display" id="srcFolderPathDisplay"></div>
+          </div>
+
+          <div class="form-group" id="secFilter">
+            <label><span data-i18n="lbl_file_filter">파일명 접두어 필터</span> <span class="badge" data-i18n="lbl_optional">선택사항</span></label>
+            <div class="filter-tags" id="filterTags">
+              <span class="filter-tag" data-prefix="CAM0_" onclick="toggleFilter(this)"><span class="dot"></span>CAM0_</span>
+              <span class="filter-tag" data-prefix="CAM1_" onclick="toggleFilter(this)"><span class="dot"></span>CAM1_</span>
+              <span class="filter-tag" data-prefix="CAM2_" onclick="toggleFilter(this)"><span class="dot"></span>CAM2_</span>
+              <span class="filter-tag" data-prefix="CAM3_" onclick="toggleFilter(this)"><span class="dot"></span>CAM3_</span>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:6px;">
+              <input type="text" id="customFilterInput" placeholder="직접 입력 (예: IMG_)" style="padding:6px 10px;font-size:0.8rem;" />
+              <button class="toggle-btn" onclick="addCustomFilter()" style="border-radius:var(--radius-sm);" data-i18n="btn_add">+ 추가</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Section 2: Size, Format, Quality -->
+      <section class="card" id="secSize">
+        <div class="card-header">⚙️ <span data-i18n="sec2_title">해상도 및 포맷 설정</span></div>
+        <div class="form-grid">
+
+          <!-- Resolution -->
+          <div class="form-group">
+            <label><span data-i18n="lbl_preset">해상도 프리셋</span></label>
+            <select id="sizePresetSelect" onchange="applyPreset(this.value)">
+              <option value="" data-i18n="opt_custom">-- 직접 입력 --</option>
+              <option value="1920,1080">📺 Full HD (1920 × 1080)</option>
+              <option value="1280,720">🖥 HD (1280 × 720)</option>
+              <option value="1024,768">🖼 XGA (1024 × 768)</option>
+              <option value="800,600">📷 SVGA (800 × 600)</option>
+              <option value="640,480">🔲 VGA (640 × 480)</option>
+            </select>
+            <div class="size-row" style="margin-top:8px;">
+              <input type="number" id="inWidth" placeholder="가로 W" min="1" max="99999" />
+              <span class="size-sep">×</span>
+              <input type="number" id="inHeight" placeholder="세로 H" min="1" max="99999" />
+            </div>
+            <div class="toggle-row">
+              <label class="toggle-wrap">
+                <input type="checkbox" id="chkAspect" checked />
+                <span class="toggle-track"></span>
+              </label>
+              <span style="font-size:0.8rem;color:var(--text-2);" data-i18n="lbl_keep_aspect">비율 유지</span>
+            </div>
+          </div>
+
+          <!-- Format & Quality -->
+          <div class="form-group" id="secFormat">
+            <label><span data-i18n="lbl_format">출력 포맷</span></label>
+            <div class="format-pills">
+              <button class="fmt-pill active" data-fmt="jpg" onclick="selectFormat('jpg')">JPG</button>
+              <button class="fmt-pill" data-fmt="png" onclick="selectFormat('png')">PNG</button>
+              <button class="fmt-pill" data-fmt="webp" onclick="selectFormat('webp')">WEBP</button>
+              <button class="fmt-pill" data-fmt="bmp" onclick="selectFormat('bmp')">BMP</button>
+            </div>
+
+            <label style="margin-top:12px;"><span data-i18n="lbl_quality">품질 설정</span> <span class="badge" id="qualityLabelBadge">85 (고화질)</span></label>
+            <div class="quality-grid">
+              <button class="q-btn" data-q="60" onclick="selectQuality(this)"><span class="q-num">60</span><span data-i18n="q_low">저용량</span></button>
+              <button class="q-btn" data-q="72" onclick="selectQuality(this)"><span class="q-num">72</span><span data-i18n="q_mid">보통</span></button>
+              <button class="q-btn active" data-q="85" onclick="selectQuality(this)"><span class="q-num">85</span><span data-i18n="q_high">고화질</span></button>
+              <button class="q-btn" data-q="92" onclick="selectQuality(this)"><span class="q-num">92</span><span data-i18n="q_veryhigh">최고</span></button>
+              <button class="q-btn" data-q="97" onclick="selectQuality(this)"><span class="q-num">97</span><span data-i18n="q_max">원본급</span></button>
+            </div>
+            <input type="hidden" id="selectedQualityVal" value="85" />
+            <input type="hidden" id="selectedFormatVal" value="jpg" />
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Section 3: Save Mode & Person Allocation -->
+      <section class="card" id="secSaveMode">
+        <div class="card-header">💾 <span data-i18n="sec3_title">저장 방식 및 인원 분배</span></div>
+
+        <div class="save-mode-grid">
+          <label class="save-mode-card">
+            <input type="radio" name="saveMode" id="modeOverwrite" value="overwrite" checked onchange="onSaveModeChange()" />
+            <div class="save-mode-box">
+              <span class="sm-icon">♻️</span>
+              <span class="sm-title" data-i18n="mode_overwrite_title">원본 덮어쓰기</span>
+              <span class="sm-desc" data-i18n="mode_overwrite_desc">원본 폴더 위치에 보관 후 덮어쓰기</span>
+            </div>
+          </label>
+
+          <label class="save-mode-card">
+            <input type="radio" name="saveMode" id="modeSeparate" value="separate" onchange="onSaveModeChange()" />
+            <div class="save-mode-box">
+              <span class="sm-icon">📁</span>
+              <span class="sm-title" data-i18n="mode_separate_title">별도 폴더 저장</span>
+              <span class="sm-desc" data-i18n="mode_separate_desc">지정한 폴더에 변환본 저장</span>
+            </div>
+          </label>
+
+          <label class="save-mode-card" id="secAlloc">
+            <input type="radio" name="saveMode" id="modeAlloc" value="alloc" onchange="onSaveModeChange()" />
+            <div class="save-mode-box">
+              <span class="sm-icon">👥</span>
+              <span class="sm-title" data-i18n="mode_alloc_title">인원별 자동 분배</span>
+              <span class="sm-desc" data-i18n="mode_alloc_desc">변환 후 Person1~N 폴더로 분배 저장</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Dynamic Controls per Mode -->
+        <div style="margin-top:16px; display:none;" id="boxSeparate">
+          <label><span data-i18n="lbl_out_folder">출력 저장 폴더</span></label>
+          <button class="folder-btn" onclick="selectOutputFolder()">
+            <span style="font-size:1.2rem">📂</span>
+            <span id="outFolderText" data-i18n="btn_choose_out_folder">출력 폴더 선택</span>
+          </button>
+          <div class="folder-path-display" id="outFolderPathDisplay"></div>
+        </div>
+
+        <div style="margin-top:16px; display:none;" id="boxAlloc">
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="flex:1;">
+              <label><span data-i18n="lbl_person_count">작업 인원 수</span></label>
+              <input type="number" id="inPersonCount" value="3" min="1" max="50" oninput="updateAllocationPreview()" />
+            </div>
+            <div style="flex:2;">
+              <label><span data-i18n="lbl_alloc_out_folder">분배 저장 위치</span></label>
+              <button class="folder-btn" onclick="selectOutputFolder()">
+                <span>📂</span>
+                <span id="allocFolderText" data-i18n="btn_choose_out_folder">출력 폴더 선택</span>
+              </button>
+            </div>
+          </div>
+          <div class="person-alloc-grid" id="personAllocGrid"></div>
+        </div>
+
+      </section>
+
+      <!-- Section 4: File List & Action -->
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div class="card-header" style="margin-bottom:0;">📋 <span data-i18n="sec4_title">대상 파일 목록</span> (<span id="fileCountText">0</span>)</div>
+          <button class="btn-primary" id="btnStart" disabled onclick="startConversion()" style="width:auto;padding:8px 24px;">
+            ▶ <span data-i18n="btn_start">변환 실행</span>
+          </button>
+        </div>
+
+        <div class="file-preview-list" id="fileListContainer">
+          <span style="color:var(--text-3);" data-i18n="msg_no_files">폴더를 선택하면 대상 이미지 파일이 여기에 표시됩니다.</span>
+        </div>
+
+        <!-- Progress Box -->
+        <div id="progressBox" style="display:none;margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:600;">
+            <span id="progCurrentFile">처리 중...</span>
+            <span id="progPct" style="color:var(--accent);font-family:'JetBrains Mono',monospace;">0%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progFill"></div>
+          </div>
+        </div>
+
+        <!-- Result Summary -->
+        <div id="summaryBox" style="display:none;margin-top:16px;">
+          <div class="stats-row">
+            <div class="stat-card" style="color:var(--success);">
+              <div class="val" id="statOk">0</div>
+              <div class="lbl" data-i18n="stat_success">성공</div>
+            </div>
+            <div class="stat-card" style="color:var(--danger);">
+              <div class="val" id="statFail">0</div>
+              <div class="lbl" data-i18n="stat_fail">실패</div>
+            </div>
+            <div class="stat-card" style="color:var(--accent);">
+              <div class="val" id="statSaving">0%</div>
+              <div class="lbl" data-i18n="stat_saved">용량 절감률</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+     JavaScript App Logic
+  ═══════════════════════════════════════════════ -->
+  <script>
+    // App State
+    let currentLang = 'ko';
+    let currentTheme = 'light';
+    let srcDirHandle = null;
+    let outDirHandle = null;
+    let imageFiles = [];
+    let activeFilters = new Set();
+    let totalBeforeSize = 0;
+    let totalAfterSize = 0;
+
+    // i18n Translations
+    const i18n = {
+      ko: {
+        appTitle: "이미지 일괄 변환기",
+        nav1: "폴더 및 파일", nav1_1: "소스 폴더 선택", nav1_2: "파일명 필터",
+        nav2: "변환 설정", nav2_1: "해상도 & 프리셋", nav2_2: "포맷 & 품질",
+        nav3: "저장 & 인원분배", nav3_1: "저장 방식 선택", nav3_2: "인원별 할당 분배",
+        sec1_title: "폴더 및 파일 설정", lbl_select_folder: "작업 대상 폴더 선택", btn_choose_folder: "폴더를 선택하세요",
+        lbl_file_filter: "파일명 접두어 필터", lbl_optional: "선택사항", btn_add: "+ 추가",
+        sec2_title: "해상도 및 포맷 설정", lbl_preset: "해상도 프리셋", opt_custom: "-- 직접 입력 --",
+        lbl_keep_aspect: "비율 유지 (한 쪽만 입력 가능)", lbl_format: "출력 포맷", lbl_quality: "품질 설정",
+        q_low: "저용량", q_mid: "보통", q_high: "고화질", q_veryhigh: "최고", q_max: "원본급",
+        sec3_title: "저장 방식 및 인원 분배", mode_overwrite_title: "원본 덮어쓰기", mode_overwrite_desc: "원본 폴더 위치에 보관 후 덮어쓰기",
+        mode_separate_title: "별도 폴더 저장", mode_separate_desc: "지정한 폴더에 변환본 저장",
+        mode_alloc_title: "인원별 자동 분배", mode_alloc_desc: "변환 후 Person1~N 폴더로 분배 저장",
+        lbl_out_folder: "출력 저장 폴더", btn_choose_out_folder: "출력 폴더 선택",
+        lbl_person_count: "작업 인원 수", lbl_alloc_out_folder: "분배 저장 위치",
+        sec4_title: "대상 파일 목록", btn_start: "변환 실행", msg_no_files: "폴더를 선택하면 대상 이미지 파일이 여기에 표시됩니다.",
+        stat_success: "성공", stat_fail: "실패", stat_saved: "용량 절감률"
+      },
+      en: {
+        appTitle: "Batch Image Converter",
+        nav1: "Folder & Files", nav1_1: "Select Source Folder", nav1_2: "Filename Filter",
+        nav2: "Conversion Settings", nav2_1: "Resolution & Presets", nav2_2: "Format & Quality",
+        nav3: "Save & Allocation", nav3_1: "Select Save Mode", nav3_2: "Person Allocation",
+        sec1_title: "Folder & File Settings", lbl_select_folder: "Select Source Folder", btn_choose_folder: "Choose Folder",
+        lbl_file_filter: "Filename Prefix Filter", lbl_optional: "Optional", btn_add: "+ Add",
+        sec2_title: "Resolution & Format Settings", lbl_preset: "Resolution Presets", opt_custom: "-- Custom Input --",
+        lbl_keep_aspect: "Keep Aspect Ratio", lbl_format: "Output Format", lbl_quality: "Quality Setting",
+        q_low: "Low", q_mid: "Mid", q_high: "High", q_veryhigh: "Top", q_max: "Max",
+        sec3_title: "Save Mode & Person Allocation", mode_overwrite_title: "Overwrite Original", mode_overwrite_desc: "Backup and overwrite in original folder",
+        mode_separate_title: "Save to Separate Folder", mode_separate_desc: "Save converted images to specified folder",
+        mode_alloc_title: "Auto Distribute by Person", mode_alloc_desc: "Convert & distribute to Person1~N folders",
+        lbl_out_folder: "Output Folder", btn_choose_out_folder: "Choose Output Folder",
+        lbl_person_count: "Number of Persons", lbl_alloc_out_folder: "Allocation Output Path",
+        sec4_title: "Target File List", btn_start: "Start Conversion", msg_no_files: "Select a folder to display matching images here.",
+        stat_success: "Success", stat_fail: "Failed", stat_saved: "Size Reduction"
+      }
+    };
+
+    // DOM Ready Initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      // Restore Theme & Lang
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      setTheme(savedTheme);
+      const savedLang = localStorage.getItem('lang') || 'ko';
+      setLanguage(savedLang);
+    });
+
+    // Theme Switcher
+    function toggleTheme() {
+      setTheme(currentTheme === 'light' ? 'dark' : 'light');
+    }
+    function setTheme(theme) {
+      currentTheme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      document.getElementById('themeIcon').textContent = theme === 'light' ? '🌙' : '☀️';
+      document.getElementById('themeLabel').textContent = theme === 'light' ? 'Dark' : 'Light';
+    }
+
+    // Language Switcher
+    function toggleLanguage() {
+      setLanguage(currentLang === 'ko' ? 'en' : 'ko');
+    }
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.getElementById('langLabel').textContent = lang === 'ko' ? 'English' : '한국어';
+      
+      // Update UI Text
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) {
+          el.textContent = i18n[lang][key];
+        }
+      });
+    }
+
+    // Navigation Accordion & Smooth Scroll
+    function toggleNav(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+    function scrollToSection(secId) {
+      const el = document.getElementById(secId);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Source Folder Selection
+    async function selectSourceFolder() {
+      try {
+        srcDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        document.getElementById('srcFolderText').textContent = '📁 ' + srcDirHandle.name;
+        const display = document.getElementById('srcFolderPathDisplay');
+        display.textContent = srcDirHandle.name;
+        display.classList.add('visible');
+
+        await scanImageFiles();
+      } catch (e) {
+        if (e.name !== 'AbortError') alert('Error selecting folder: ' + e.message);
+      }
+    }
+
+    // Output Folder Selection
+    async function selectOutputFolder() {
+      try {
+        outDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        const name = '📁 ' + outDirHandle.name;
+        document.getElementById('outFolderText').textContent = name;
+        document.getElementById('allocFolderText').textContent = name;
+        const display = document.getElementById('outFolderPathDisplay');
+        display.textContent = outDirHandle.name;
+        display.classList.add('visible');
+      } catch (e) {
+        if (e.name !== 'AbortError') alert('Error selecting output folder: ' + e.message);
+      }
+    }
+
+    // Filter Logic
+    function toggleFilter(el) {
+      const prefix = el.getAttribute('data-prefix');
+      if (activeFilters.has(prefix)) {
+        activeFilters.delete(prefix);
+        el.classList.remove('active');
+      } else {
+        activeFilters.add(prefix);
+        el.classList.add('active');
+      }
+      if (srcDirHandle) scanImageFiles();
+    }
+
+    function addCustomFilter() {
+      const input = document.getElementById('customFilterInput');
+      const val = input.value.trim();
+      if (!val) return;
+      
+      const tag = document.createElement('span');
+      tag.className = 'filter-tag active';
+      tag.setAttribute('data-prefix', val);
+      tag.innerHTML = `<span class="dot"></span>${val}`;
+      tag.onclick = () => toggleFilter(tag);
+      document.getElementById('filterTags').appendChild(tag);
+      
+      activeFilters.add(val);
+      input.value = '';
+      if (srcDirHandle) scanImageFiles();
+    }
+
+    function matchesFilter(filename) {
+      if (activeFilters.size === 0) return true;
+      const lower = filename.toLowerCase();
+      for (const prefix of activeFilters) {
+        if (lower.startsWith(prefix.toLowerCase())) return true;
+      }
+      return false;
+    }
+
+    // Image Scanning
+    async function scanImageFiles() {
+      imageFiles = [];
+      totalBeforeSize = 0;
+      await collectFilesRecursive(srcDirHandle, '');
+      
+      document.getElementById('fileCountText').textContent = imageFiles.length;
+      document.getElementById('btnStart').disabled = imageFiles.length === 0;
+
+      renderFileList();
+      updateAllocationPreview();
+    }
+
+    async function collectFilesRecursive(dirHandle, relPath) {
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (handle.kind === 'directory') {
+          if (name === '_backup' || (outDirHandle && name === outDirHandle.name)) continue;
+          await collectFilesRecursive(handle, relPath ? relPath + '/' + name : name);
+        } else if (handle.kind === 'file') {
+          const lower = name.toLowerCase();
+          if ((lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.png') || lower.endsWith('.webp') || lower.endsWith('.bmp')) && matchesFilter(name)) {
+            const file = await handle.getFile();
+            totalBeforeSize += file.size;
+            imageFiles.push({
+              name,
+              relPath: relPath || '',
+              handle,
+              dirHandle,
+              size: file.size
+            });
+          }
+        }
+      }
+    }
+
+    function renderFileList() {
+      const container = document.getElementById('fileListContainer');
+      if (imageFiles.length === 0) {
+        container.innerHTML = `<span style="color:var(--text-3);">${i18n[currentLang].msg_no_files}</span>`;
+        return;
+      }
+      container.innerHTML = imageFiles.map(f => `
+        <div style="display:flex;justify-content:space-between;">
+          <span>🖼️ ${f.name} <small style="color:var(--text-3);">(${f.relPath || 'root'})</small></span>
+          <span>${(f.size / 1024).toFixed(1)} KB</span>
+        </div>
+      `).join('');
+    }
+
+    // Save Mode Switcher
+    function onSaveModeChange() {
+      const mode = document.querySelector('input[name="saveMode"]:checked').value;
+      document.getElementById('boxSeparate').style.display = mode === 'separate' ? 'block' : 'none';
+      document.getElementById('boxAlloc').style.display = mode === 'alloc' ? 'block' : 'none';
+      if (mode === 'alloc') updateAllocationPreview();
+    }
+
+    // Person Allocation Preview
+    function updateAllocationPreview() {
+      const mode = document.querySelector('input[name="saveMode"]:checked').value;
+      if (mode !== 'alloc') return;
+
+      const personCount = Math.max(1, parseInt(document.getElementById('inPersonCount').value) || 1);
+      const grid = document.getElementById('personAllocGrid');
+      grid.innerHTML = '';
+
+      const personBuckets = Array.from({ length: personCount }, () => []);
+      imageFiles.forEach((file, idx) => {
+        personBuckets[idx % personCount].push(file);
+      });
+
+      personBuckets.forEach((files, i) => {
+        const card = document.createElement('div');
+        card.className = 'person-card';
+        card.innerHTML = `
+          <div class="person-card-title">
+            <span>👤 Person ${i + 1}</span>
+            <span>${files.length} items</span>
+          </div>
+          <div style="color:var(--text-3);font-size:0.72rem;max-height:80px;overflow-y:auto;">
+            ${files.map(f => f.name).join('<br>') || '<em>No items</em>'}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Preset & Format Controls
+    function applyPreset(val) {
+      if (!val) return;
+      const [w, h] = val.split(',');
+      document.getElementById('inWidth').value = w;
+      document.getElementById('inHeight').value = h;
+    }
+
+    function selectFormat(fmt) {
+      document.querySelectorAll('.fmt-pill').forEach(b => b.classList.remove('active'));
+      document.querySelector(`.fmt-pill[data-fmt="${fmt}"]`).classList.add('active');
+      document.getElementById('selectedFormatVal').value = fmt;
+    }
+
+    function selectQuality(btn) {
+      document.querySelectorAll('.q-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const q = btn.getAttribute('data-q');
+      document.getElementById('selectedQualityVal').value = q;
+      document.getElementById('qualityLabelBadge').textContent = `${q}`;
+    }
+
+    // Canvas BMP Manual Encoder (24-bit RGB)
+    function encodeBMP(imageData) {
+      const width = imageData.width;
+      const height = imageData.height;
+      const data = imageData.data;
+      const padding = (4 - (width * 3) % 4) % 4;
+      const fileSize = 54 + (width * 3 + padding) * height;
+
+      const buffer = new ArrayBuffer(fileSize);
+      const view = new DataView(buffer);
+
+      // BMP Header
+      view.setUint16(0, 0x4D42, true); // "BM"
+      view.setUint32(2, fileSize, true);
+      view.setUint32(6, 0, true);
+      view.setUint32(10, 54, true); // Data offset
+
+      // DIB Header
+      view.setUint32(14, 40, true);
+      view.setInt32(18, width, true);
+      view.setInt32(22, -height, true); // top-down
+      view.setUint16(26, 1, true); // Planes
+      view.setUint16(28, 24, true); // 24-bit
+      view.setUint32(30, 0, true); // No compression
+      view.setUint32(34, (width * 3 + padding) * height, true);
+
+      let offset = 54;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          view.setUint8(offset++, data[idx + 2]); // B
+          view.setUint8(offset++, data[idx + 1]); // G
+          view.setUint8(offset++, data[idx]);     // R
+        }
+        for (let p = 0; p < padding; p++) view.setUint8(offset++, 0);
+      }
+
+      return new Blob([buffer], { type: 'image/bmp' });
+    }
+
+    // Main Conversion Engine
+    async function startConversion() {
+      const targetW = parseInt(document.getElementById('inWidth').value) || 0;
+      const targetH = parseInt(document.getElementById('inHeight').value) || 0;
+      const format = document.getElementById('selectedFormatVal').value;
+      const quality = parseInt(document.getElementById('selectedQualityVal').value) / 100;
+      const keepAR = document.getElementById('chkAspect').checked;
+      const mode = document.querySelector('input[name="saveMode"]:checked').value;
+
+      if (mode !== 'overwrite' && !outDirHandle) {
+        alert('출력 저장 폴더를 선택해주세요.');
+        return;
+      }
+
+      document.getElementById('btnStart').disabled = true;
+      document.getElementById('progressBox').style.display = 'block';
+      document.getElementById('summaryBox').style.display = 'none';
+
+      let okCount = 0;
+      let failCount = 0;
+      totalAfterSize = 0;
+
+      const personCount = Math.max(1, parseInt(document.getElementById('inPersonCount').value) || 1);
+
+      for (let i = 0; i < imageFiles.length; i++) {
+        const fileObj = imageFiles[i];
+        const pct = Math.round(((i + 1) / imageFiles.length) * 100);
+        document.getElementById('progCurrentFile').textContent = `[${i + 1}/${imageFiles.length}] ${fileObj.name}`;
+        document.getElementById('progPct').textContent = `${pct}%`;
+        document.getElementById('progFill').style.width = `${pct}%`;
+
+        try {
+          const file = await fileObj.handle.getFile();
+          const imgBitmap = await createImageBitmap(file);
+
+          let outW = targetW;
+          let outH = targetH;
+          const srcW = imgBitmap.width;
+          const srcH = imgBitmap.height;
+
+          if (keepAR) {
+            if (outW && !outH) outH = Math.round((srcH / srcW) * outW);
+            else if (outH && !outW) outW = Math.round((srcW / srcH) * outH);
+            else if (outW && outH) {
+              const scale = Math.min(outW / srcW, outH / srcH);
+              outW = Math.round(srcW * scale);
+              outH = Math.round(srcH * scale);
+            }
+          }
+          if (!outW) outW = srcW;
+          if (!outH) outH = srcH;
+
+          // OffscreenCanvas Rendering
+          const canvas = new OffscreenCanvas(outW, outH);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(imgBitmap, 0, 0, outW, outH);
+          imgBitmap.close();
+
+          let blob;
+          if (format === 'bmp') {
+            const imgData = ctx.getImageData(0, 0, outW, outH);
+            blob = encodeBMP(imgData);
+          } else {
+            const mimeType = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
+            blob = await canvas.convertToBlob({ type: mimeType, quality });
+          }
+
+          totalAfterSize += blob.size;
+
+          // Output Filename Generation
+          const baseName = fileObj.name.substring(0, fileObj.name.lastIndexOf('.')) || fileObj.name;
+          const outName = `${baseName}.${format}`;
+
+          if (mode === 'overwrite') {
+            // Backup Original
+            const backupDir = await fileObj.dirHandle.getDirectoryHandle('_backup', { create: true });
+            const backupHandle = await backupDir.getFileHandle(fileObj.name, { create: true });
+            const backupWritable = await backupHandle.createWritable();
+            await backupWritable.write(await file.arrayBuffer());
+            await backupWritable.close();
+
+            // Write Overwrite (or new format)
+            const newHandle = await fileObj.dirHandle.getFileHandle(outName, { create: true });
+            const writable = await newHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } else if (mode === 'separate') {
+            let targetDir = outDirHandle;
+            if (fileObj.relPath) {
+              const parts = fileObj.relPath.split('/').filter(Boolean);
+              for (const p of parts) targetDir = await targetDir.getDirectoryHandle(p, { create: true });
+            }
+            const outHandle = await targetDir.getFileHandle(outName, { create: true });
+            const writable = await outHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          } else if (mode === 'alloc') {
+            const personIdx = (i % personCount) + 1;
+            const personDir = await outDirHandle.getDirectoryHandle(`Person${personIdx}`, { create: true });
+            const outHandle = await personDir.getFileHandle(outName, { create: true });
+            const writable = await outHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+          }
+
+          okCount++;
+        } catch (e) {
+          console.error(e);
+          failCount++;
+        }
+      }
+
+      // Summary
+      document.getElementById('statOk').textContent = okCount;
+      document.getElementById('statFail').textContent = failCount;
+      const savedPct = totalBeforeSize > 0 ? Math.round(((totalBeforeSize - totalAfterSize) / totalBeforeSize) * 100) : 0;
+      document.getElementById('statSaving').textContent = `${savedPct}%`;
+
+      document.getElementById('summaryBox').style.display = 'block';
+      document.getElementById('btnStart').disabled = false;
+    }
+  </script>
+</body>
+</html>

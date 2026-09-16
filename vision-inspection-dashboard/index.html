@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제조업 검사 비전 방식별 (2D / 2.5D / 3D / AI) 비교 대시보드</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --card-bg: rgba(18, 26, 41, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.35);
+            --accent-2d: #38bdf8;
+            --accent-25d: #10b981;
+            --accent-3d: #f59e0b;
+            --accent-ai: #ec4899;
+            --accent-brand: #a855f7;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --radius-lg: 12px;
+            --radius-md: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.08) 0%, transparent 35%);
+            background-attachment: fixed;
+            padding-bottom: 40px;
+        }
+
+        /* 50% 축소된 콤팩트 헤더 */
+        header {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 20px 10px;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(16, 185, 129, 0.2));
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #60a5fa;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        p.subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            max-width: 760px;
+            margin: 0 auto 14px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* 콤팩트 고시인성 메뉴 카드 (Tabs) */
+        .nav-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(22, 32, 50, 0.85);
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-btn:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.4), rgba(59, 130, 246, 0.25));
+            border: 1.5px solid #3b82f6;
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+            font-weight: 700;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Table Design */
+        .table-wrapper {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            overflow-x: auto;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 900px;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: top;
+            font-size: 0.88rem;
+        }
+
+        th {
+            background: rgba(13, 19, 31, 0.9);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+        }
+
+        th.col-header {
+            width: 22%;
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        th.col-header.tech-2d { border-top: 3px solid var(--accent-2d); }
+        th.col-header.tech-25d { border-top: 3px solid var(--accent-25d); }
+        th.col-header.tech-3d { border-top: 3px solid var(--accent-3d); }
+        th.col-header.tech-ai { border-top: 3px solid var(--accent-ai); }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .row-title {
+            font-weight: 700;
+            color: #60a5fa;
+            width: 12%;
+            background: rgba(13, 19, 31, 0.5);
+            white-space: nowrap;
+        }
+
+        .price-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .tag-2d { background: rgba(56, 189, 248, 0.15); color: var(--accent-2d); border: 1px solid rgba(56, 189, 248, 0.3); }
+        .tag-25d { background: rgba(16, 185, 129, 0.15); color: var(--accent-25d); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .tag-3d { background: rgba(245, 158, 11, 0.15); color: var(--accent-3d); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .tag-ai { background: rgba(236, 72, 153, 0.15); color: var(--accent-ai); border: 1px solid rgba(236, 72, 153, 0.3); }
+        .tag-brand { background: rgba(168, 85, 247, 0.15); color: var(--accent-brand); border: 1px solid rgba(168, 85, 247, 0.3); }
+
+        .list-styled {
+            list-style: none;
+        }
+
+        .list-styled li {
+            position: relative;
+            padding-left: 14px;
+            margin-bottom: 4px;
+            font-size: 0.86rem;
+        }
+
+        .list-styled li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Tech Cards Section */
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .tech-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .tech-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .tech-card-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .tech-card-body {
+            padding: 16px;
+        }
+
+        .tech-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tech-card-desc {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            line-height: 1.45;
+        }
+
+        /* Brand Comparison Cards */
+        .brand-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .brand-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+
+        .brand-card:hover {
+            border-color: var(--accent-brand);
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.15);
+        }
+
+        .brand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .brand-name {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .brand-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            font-weight: 600;
+        }
+
+        /* Analytics Section */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-box h3 {
+            font-size: 0.98rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #e5e7eb;
+        }
+
+        /* 순차적 Wizard (Q1 -> Q2 -> Q3 -> Popup) */
+        .wizard-box {
+            background: linear-gradient(135deg, rgba(22, 32, 50, 0.95), rgba(13, 19, 31, 0.95));
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            margin-bottom: 30px;
+        }
+
+        .wizard-step-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .wizard-step-block {
+            background: rgba(13, 19, 31, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .wizard-step-block.hidden-step {
+            display: none;
+        }
+
+        .wizard-step-block.fadeInStep {
+            display: block;
+            animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .wizard-question {
+            font-size: 0.92rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .wizard-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        .wizard-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 12px 14px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .wizard-btn:hover {
+            background: rgba(59, 130, 246, 0.18);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .wizard-btn.selected {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.9), rgba(59, 130, 246, 0.8));
+            border-color: var(--primary);
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .reset-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ffffff;
+        }
+
+        /* 팝업 모달 (Popup Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: linear-gradient(135deg, #131b2e 0%, #0d1322 100%);
+            border: 1.5px solid var(--primary);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px var(--primary-glow);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 580px;
+            padding: 24px;
+            position: relative;
+            transform: scale(0.9);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.3);
+            color: #ffffff;
+        }
+
+        .modal-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 14px;
+            line-height: 1.3;
+        }
+
+        .modal-img-box {
+            width: 100%;
+            height: 180px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid var(--card-border);
+        }
+
+        .modal-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-body-text {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+            line-height: 1.55;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-modal-reset {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-reset:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-modal-confirm {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            border: none;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn-modal-confirm:hover {
+            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="badge">SMART FACTORY VISION MATRIX</div>
+        <h1>제조업 검사 비전 방식별 설비 가격 및 특성 비교</h1>
+        <p class="subtitle">2D 룰베이스, 2.5D 포토메트릭, 3D 레이저 측정, AI 딥러닝 비전 종합 비교 대시보드</p>
+    </header>
+
+    <div class="container">
+        <!-- 콤팩트 고시인성 메뉴 카드 (Tabs) -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('table-view', this)">
+                📊 종합 비교표 (Table)
+            </button>
+            <button class="tab-btn" onclick="switchTab('card-view', this)">
+                🖼️ 기술별 카드 보기 (Tech Cards)
+            </button>
+            <button class="tab-btn" onclick="switchTab('brand-view', this)">
+                🏢 브랜드별 비교분석 (Vendors)
+            </button>
+            <button class="tab-btn" onclick="switchTab('chart-view', this)">
+                📈 가격 & 성능 그래프 (Analytics)
+            </button>
+            <button class="tab-btn" onclick="switchTab('wizard-view', this)">
+                🎯 비전 추천 진단 (Finder Q1~Q3)
+            </button>
+        </div>
+
+        <!-- Tab 1: Table View -->
+        <div id="table-view" class="tab-content active">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="row-title">구분</th>
+                            <th class="col-header tech-2d">2D 룰베이스 비전</th>
+                            <th class="col-header tech-25d">2.5D 룰베이스 비전 ✨</th>
+                            <th class="col-header tech-3d">3D 룰베이스 비전</th>
+                            <th class="col-header tech-ai">딥러닝 (AI) 비전</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="row-title">상대적 가격 수준</td>
+                            <td>
+                                <strong>베이스 (기준 1.0x)</strong>
+                                <div><span class="price-tag tag-2d">저비용 / 초고속</span></div>
+                            </td>
+                            <td>
+                                <strong>1.2배 ~ 1.8배 수준</strong>
+                                <div><span class="price-tag tag-25d">가성비 표면 입체</span></div>
+                            </td>
+                            <td>
+                                <strong>1.5배 ~ 2.5배 수준</strong>
+                                <div><span class="price-tag tag-3d">중고가 정밀 3D</span></div>
+                            </td>
+                            <td>
+                                <strong>2배 ~ 4배 이상 수준</strong>
+                                <div><span class="price-tag tag-ai">고성능 GPU 워크스테이션</span></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="row-title">대략적 추가 장비가<br>(1식 기준)</td>
+                            <td><strong style="color: var(--accent-2d);">수백만 원 ~ 1,500만 원</strong></td>
+                            <td><strong style="color: var(--accent-25d);">1,000만 원 ~ 2,500만 원</strong></td>
+                            <td><strong style="color: var(--accent-3d);">1,500만 원 ~ 3,500만 원</strong></td>
+                            <td><strong style="color: var(--accent-ai);">3,000만 원 ~ 7,000만 원 이상</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="row-title">주요 하드웨어 구성</td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>일반 2D 카메라</li>
+                                    <li>단일 조명 (링/동축/백라이트)</li>
+                                    <li>일반형 PC</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>다중 방향 조명 (돔/멀티채널)</li>
+                                    <li>2D 카메라 또는 Z축 구동부</li>
+                                    <li>멀티채널 조명 컨트롤러</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>3D 레이저 프로파일러 / 구조광 센서</li>
+                                    <li>엔코더/인터페이스 제어기</li>
+                                    <li>고성능 메인 PC</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>고해상도 카메라 (Area/Line)</li>
+                                    <li>고성능 GPU 워크스테이션</li>
+                                    <li>고품질 광학 조명 모듈</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="row-title">소프트웨어 및 연산</td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>기본 2D 비전 라이브러리</li>
+                                    <li>(Pattern, Edge, Blob, OCR)</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>포토메트릭 스테레오 알고리즘</li>
+                                    <li>표면 경사도 (Gradient) 추출</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>3D 점군 (Point Cloud) 데이터 처리</li>
+                                    <li>3D 룰베이스 측정 라이브러리</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>AI 딥러닝 비전 라이브러리</li>
+                                    <li>(ViDi, HALCON Deep Learning 등)</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="row-title">적합한 검사 대상</td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>위치·형태가 고정된 평면 불량</li>
+                                    <li>단순 치수/유무 검사</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>금속 표면 미세 요철, 각인, 각도</li>
+                                    <li>얕은 스크래치, 찍힘, 헤어라인</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>단차 (GAP), 휨 (평탄도)</li>
+                                    <li>Z축 높이, 깊이, 체적 측정</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li><strong>각형 배터리 캔 용접/스패터/핀홀</strong></li>
+                                    <li>외관 비정형 얼룩 미세 검사</li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="row-title">주요 장점</td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>도입 비용이 가장 저렴함</li>
+                                    <li>속도가 매우 빠름 (High Throughput)</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>고가 3D 센서 없이 2D 카메라 기반 표면 입체감/단차 효과적 파악</li>
+                                    <li>표면 질감과 3D 릴리프 형상 분리</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>조명 반사나 그림자에 구애받지 않음</li>
+                                    <li>정밀 3차원 수치 보증 가능</li>
+                                </ul>
+                            </td>
+                            <td>
+                                <ul class="list-styled">
+                                    <li>사람 눈처럼 유연하게 복잡한 불량 판별</li>
+                                    <li>용접 스패터/핀홀 등 비정형 전치 검사</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Tech Cards -->
+        <div id="card-view" class="tab-content">
+            <div class="grid-cards">
+                <div class="tech-card">
+                    <img src="images/vision_2d.jpg" onerror="this.onerror=null; this.src='vision_2d.jpg';" alt="2D Vision" class="tech-card-img">
+                    <div class="tech-card-body">
+                        <div class="tech-card-title">
+                            <span>2D 룰베이스 비전</span>
+                            <span class="price-tag tag-2d">1.0x</span>
+                        </div>
+                        <p class="tech-card-desc">평면 부품의 치수, 유무, 패턴 인식을 빠른 속도로 검사하는 표준 비전 시스템.</p>
+                        <div style="font-weight: 600; font-size: 0.85rem; color: var(--accent-2d);">추천 예산: 수백만 원 ~ 1,500만 원</div>
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <img src="images/vision_25d.jpg" onerror="this.onerror=null; this.src='vision_25d.jpg';" alt="2.5D Vision" class="tech-card-img">
+                    <div class="tech-card-body">
+                        <div class="tech-card-title">
+                            <span>2.5D 포토메트릭 비전</span>
+                            <span class="price-tag tag-25d">1.2~1.8x</span>
+                        </div>
+                        <p class="tech-card-desc">다중 조명 연산(Photometric Stereo)을 통해 2D 카메라로 표면 입체감과 미세 각인을 감지.</p>
+                        <div style="font-weight: 600; font-size: 0.85rem; color: var(--accent-25d);">추천 예산: 1,000만 원 ~ 2,500만 원</div>
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <img src="images/vision_3d.jpg" onerror="this.onerror=null; this.src='vision_3d.jpg';" alt="3D Vision" class="tech-card-img">
+                    <div class="tech-card-body">
+                        <div class="tech-card-title">
+                            <span>3D 룰베이스 비전</span>
+                            <span class="price-tag tag-3d">1.5~2.5x</span>
+                        </div>
+                        <p class="tech-card-desc">레이저 프로파일러/구조광으로 Z축 높이, 단차(GAP), 휨(평탄도), 체적을 절대 수치로 측정.</p>
+                        <div style="font-weight: 600; font-size: 0.85rem; color: var(--accent-3d);">추천 예산: 1,500만 원 ~ 3,500만 원</div>
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <img src="images/vision_ai.jpg" onerror="this.onerror=null; this.src='vision_ai.jpg';" alt="각형배터리 AI 비전 검사" class="tech-card-img">
+                    <div class="tech-card-body">
+                        <div class="tech-card-title">
+                            <span>딥러닝 (AI) 비전 (각형배터리)</span>
+                            <span class="price-tag tag-ai">2.0~4.0x+</span>
+                        </div>
+                        <p class="tech-card-desc"><strong>각형 배터리 검사 특화:</strong> 용접 부위 스패터, 핀홀, 비정형 얼룩 및 미세 크랙 AI 자동 감지.</p>
+                        <div style="font-weight: 600; font-size: 0.85rem; color: var(--accent-ai);">추천 예산: 3,000만 원 ~ 7,000만 원 이상</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Brand Comparison -->
+        <div id="brand-view" class="tab-content">
+            <div class="brand-grid">
+                <div class="brand-card">
+                    <div class="brand-header">
+                        <div class="brand-name">KEYENCE (키엔스)</div>
+                        <div class="brand-tag">전용 콘트롤러 일체형</div>
+                    </div>
+                    <ul class="list-styled" style="margin-bottom: 12px;">
+                        <li><strong>주요 제품:</strong> XG-X, CV-X 시리즈, LJ-X8000 (3D)</li>
+                        <li><strong>하드웨어:</strong> 전용 초고속 처리 칩셋 탑재 독립형 콘트롤러</li>
+                        <li><strong>소프트웨어:</strong> 자체 탑재 No-Code / GUI 검사 툴셋</li>
+                        <li><strong>장점:</strong> 극상의 셋업 편의성, 엔지니어 지원 우수, 정밀 3D 센서 인프라</li>
+                        <li><strong>단점:</strong> 4사 중 상대적 가격대가 가장 높음, 폐쇄형 시스템</li>
+                    </ul>
+                    <span class="price-tag tag-brand">가격대: 최고가 (★★★)</span>
+                </div>
+
+                <div class="brand-card">
+                    <div class="brand-header">
+                        <div class="brand-name">COGNEX (코그닉스)</div>
+                        <div class="brand-tag">글로벌 비전 SW 1위</div>
+                    </div>
+                    <ul class="list-styled" style="margin-bottom: 12px;">
+                        <li><strong>주요 제품:</strong> In-Sight 스마트카메라, VisionPro, ViDi AI</li>
+                        <li><strong>하드웨어:</strong> 스마트카메라 및 산업용 PC 라이선스 결합</li>
+                        <li><strong>소프트웨어:</strong> VisionPro, Cognex Deep Learning (ViDi)</li>
+                        <li><strong>장점:</strong> 광학 난반사 및 비정형 검사 정확도 우수, AI 알고리즘 선도</li>
+                        <li><strong>단점:</strong> 라이선스 비용 발생, 고난도 검사 시 숙련 셋업 필요</li>
+                    </ul>
+                    <span class="price-tag tag-brand">가격대: 상 (★★☆)</span>
+                </div>
+
+                <div class="brand-card">
+                    <div class="brand-header">
+                        <div class="brand-name">MVTec HALCON</div>
+                        <div class="brand-tag">SDK 릴리즈 커스텀</div>
+                    </div>
+                    <ul class="list-styled" style="margin-bottom: 12px;">
+                        <li><strong>주요 제품:</strong> HALCON 23.x, MERLIC</li>
+                        <li><strong>하드웨어:</strong> 서드파티 GigE/CoaXPress 카메라 자유 결합</li>
+                        <li><strong>소프트웨어:</strong> C++/C# 개발자용 포괄적 머신비전 SDK</li>
+                        <li><strong>장점:</strong> 알고리즘 커스터마이징 100% 가능, 하드웨어 선택 자유도</li>
+                        <li><strong>단점:</strong> C++/C# 비전 전담 소프트웨어 개발자 보유 필수</li>
+                    </ul>
+                    <span class="price-tag tag-brand">가격대: 중상 (★★☆)</span>
+                </div>
+
+                <div class="brand-card">
+                    <div class="brand-header">
+                        <div class="brand-name">Basler / Hikrobot</div>
+                        <div class="brand-tag">Open Component H/W</div>
+                    </div>
+                    <ul class="list-styled" style="margin-bottom: 12px;">
+                        <li><strong>주요 제품:</strong> ace2, MED, MV 3D Laser Profiler</li>
+                        <li><strong>하드웨어:</strong> 산업용 센서 및 카메라 H/W 전문</li>
+                        <li><strong>소프트웨어:</strong> pylon SDK, MVS (무료 드라이버/기본 뷰어)</li>
+                        <li><strong>장점:</strong> 하드웨어 구입 비용 최저, 오픈소스/HALCON 연동 유연</li>
+                        <li><strong>단점:</strong> 자체 상용 검사 알고리즘 미포함 (SI 구축 필수)</li>
+                    </ul>
+                    <span class="price-tag tag-brand">가격대: 중저가 (★☆☆)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Analytics -->
+        <div id="chart-view" class="tab-content">
+            <div class="analytics-grid">
+                <div class="chart-box">
+                    <h3>💵 비전 방식별 도입 가격 범위 비교 (1식 기준, 만 원)</h3>
+                    <canvas id="costChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>⚡ 기술 특성 레이더 비교 (Radar Analysis)</h3>
+                    <canvas id="radarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: 순차 진행 Recommendation Wizard (Q1 -> Q2 -> Q3 -> Modal) -->
+        <div id="wizard-view" class="tab-content">
+            <div class="wizard-box">
+                <div class="wizard-step-title">
+                    <span>🎯 맞춤형 검사 비전 진단 (Q1 ➔ Q2 ➔ Q3 순차 진단)</span>
+                    <button class="reset-btn" onclick="resetWizard()">🔄 초기화</button>
+                </div>
+
+                <!-- Q1 (기본 노출) -->
+                <div class="wizard-step-block" id="wizard-step-1">
+                    <div class="wizard-question">Q1. 검사 대상 및 핵심 불량 항목을 선택하세요.</div>
+                    <div class="wizard-options">
+                        <button class="wizard-btn" onclick="selectWizard(1, '2d', this)">Q1-A. 평면 치수 / 위치 / 단순 유무 검사</button>
+                        <button class="wizard-btn" onclick="selectWizard(1, '25d', this)">Q1-B. 금속 표면 미세 스크래치 / 각인 / 헤어라인</button>
+                        <button class="wizard-btn" onclick="selectWizard(1, '3d', this)">Q1-C. Z축 높이 / 단차 (GAP) / 휨(평탄도)</button>
+                        <button class="wizard-btn" onclick="selectWizard(1, 'ai', this)">Q1-D. 외관 비정형 얼룩 / 용접 스패터, 핀홀</button>
+                    </div>
+                </div>
+
+                <!-- Q2 (Q1 클릭 시 노출) -->
+                <div class="wizard-step-block hidden-step" id="wizard-step-2">
+                    <div class="wizard-question">Q2. 검사 부품의 표면 재질 및 광학 특성은 어떠합니까?</div>
+                    <div class="wizard-options">
+                        <button class="wizard-btn" onclick="selectWizard(2, 'normal', this)">Q2-A. 무광 수지 / 일반 PCB / 평면 인쇄체</button>
+                        <button class="wizard-btn" onclick="selectWizard(2, 'reflective', this)">Q2-B. 난반사 금속 / 고광택 캔 / 유광 필름</button>
+                        <button class="wizard-btn" onclick="selectWizard(2, 'complex', this)">Q2-C. 불규칙 텍스처 / 용접 부위 / 불투명 가죽</button>
+                    </div>
+                </div>
+
+                <!-- Q3 (Q2 클릭 시 노출) -->
+                <div class="wizard-step-block hidden-step" id="wizard-step-3">
+                    <div class="wizard-question">Q3. 라인의 목표 검사 속도(Tact Time) 및 구축 예산은 얼마입니까?</div>
+                    <div class="wizard-options">
+                        <button class="wizard-btn" onclick="selectWizard(3, 'fast_low', this)">Q3-A. 초고속 검사 (분당 300ea+) & 실속 예산 (&lt;1,500만)</button>
+                        <button class="wizard-btn" onclick="selectWizard(3, 'mid_bal', this)">Q3-B. 일반 고속 & 가성비 입체검사 예산 (1,000만~2,500만)</button>
+                        <button class="wizard-btn" onclick="selectWizard(3, 'precision', this)">Q3-C. 정밀 3차원 수치 보증 & 중고가 예산 (1,500만~3,500만)</button>
+                        <button class="wizard-btn" onclick="selectWizard(3, 'high_ai', this)">Q3-D. 최고 유연 검사 & AI 투자 예산 (&gt;3,000만)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 팝업 모달 (Popup Modal) -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div class="modal-badge" id="modal-badge">🎯 진단 완료 - 최적 추천 솔루션</div>
+            <h3 class="modal-title" id="modal-title">💡 추천 시스템: 2D 룰베이스 비전</h3>
+            <div class="modal-img-box">
+                <img id="modal-img" src="images/vision_2d.jpg" onerror="this.onerror=null; this.src='vision_2d.jpg';" alt="Recommended Vision">
+            </div>
+            <div class="modal-body-text" id="modal-body-text">
+                설명 내용이 출력됩니다.
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal-reset" onclick="resetWizard()">🔄 다시 진단하기</button>
+                <button class="btn-modal-confirm" onclick="closeModal()">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2026 Smart Manufacturing Inspection Vision Matrix | Google Antigravity Solution</p>
+    </footer>
+
+    <script>
+        function switchTab(tabId, btnEl) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btnEl.classList.add('active');
+
+            if (tabId === 'chart-view') {
+                initCharts();
+            }
+        }
+
+        let chartsInitialized = false;
+        function initCharts() {
+            if (chartsInitialized) return;
+            chartsInitialized = true;
+
+            const ctxCost = document.getElementById('costChart').getContext('2d');
+            new Chart(ctxCost, {
+                type: 'bar',
+                data: {
+                    labels: ['2D 룰베이스', '2.5D 포토메트릭', '3D 룰베이스', '딥러닝 (AI)'],
+                    datasets: [{
+                        label: '최저 가격 (만 원)',
+                        data: [300, 1000, 1500, 3000],
+                        backgroundColor: 'rgba(56, 189, 248, 0.5)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1
+                    }, {
+                        label: '최고 가격 (만 원)',
+                        data: [1500, 2500, 3500, 7000],
+                        backgroundColor: 'rgba(236, 72, 153, 0.5)',
+                        borderColor: '#ec4899',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: { legend: { labels: { color: '#f3f4f6' } } }
+                }
+            });
+
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['가격 경제성', '검사 속도', '3D 입체 파악력', '비정형 유연성', '유지보수 용이성'],
+                    datasets: [
+                        { label: '2D 비전', data: [95, 95, 20, 30, 90], borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.2)' },
+                        { label: '2.5D 비전', data: [80, 85, 75, 45, 80], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.2)' },
+                        { label: '3D 비전', data: [65, 70, 98, 50, 70], borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.2)' },
+                        { label: 'AI 딥러닝', data: [40, 75, 40, 98, 60], borderColor: '#ec4899', backgroundColor: 'rgba(236, 72, 153, 0.2)' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#f3f4f6', font: { size: 11 } },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: { legend: { labels: { color: '#f3f4f6' } } }
+                }
+            });
+        }
+
+        // Q1 -> Q2 -> Q3 순차 진단 및 팝업 모달 제어
+        const wizardAnswers = { q1: null, q2: null, q3: null };
+
+        function selectWizard(qNum, value, btnEl) {
+            btnEl.parentElement.querySelectorAll('.wizard-btn').forEach(b => b.classList.remove('selected'));
+            btnEl.classList.add('selected');
+
+            if (qNum === 1) {
+                wizardAnswers.q1 = value;
+                const q2Block = document.getElementById('wizard-step-2');
+                q2Block.classList.remove('hidden-step');
+                q2Block.classList.add('fadeInStep');
+            } else if (qNum === 2) {
+                wizardAnswers.q2 = value;
+                const q3Block = document.getElementById('wizard-step-3');
+                q3Block.classList.remove('hidden-step');
+                q3Block.classList.add('fadeInStep');
+            } else if (qNum === 3) {
+                wizardAnswers.q3 = value;
+                evaluateAndShowModal();
+            }
+        }
+
+        function resetWizard() {
+            wizardAnswers.q1 = null;
+            wizardAnswers.q2 = null;
+            wizardAnswers.q3 = null;
+            
+            document.querySelectorAll('.wizard-btn').forEach(b => b.classList.remove('selected'));
+            
+            const q2Block = document.getElementById('wizard-step-2');
+            const q3Block = document.getElementById('wizard-step-3');
+            
+            q2Block.classList.add('hidden-step');
+            q2Block.classList.remove('fadeInStep');
+            q3Block.classList.add('hidden-step');
+            q3Block.classList.remove('fadeInStep');
+            
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        function evaluateAndShowModal() {
+            let mainTech = wizardAnswers.q1;
+            
+            if (wizardAnswers.q1 === '25d' || (wizardAnswers.q2 === 'reflective' && wizardAnswers.q1 !== '3d' && wizardAnswers.q1 !== 'ai')) {
+                mainTech = '25d';
+            }
+            if (wizardAnswers.q1 === 'ai' || wizardAnswers.q2 === 'complex' || wizardAnswers.q3 === 'high_ai') {
+                mainTech = 'ai';
+            }
+            if (wizardAnswers.q1 === '3d' || wizardAnswers.q3 === 'precision') {
+                mainTech = '3d';
+            }
+            if (wizardAnswers.q1 === '2d' && wizardAnswers.q3 === 'fast_low') {
+                mainTech = '2d';
+            }
+
+            const results = {
+                '2d': {
+                    title: '💡 추천 시스템: 2D 룰베이스 비전',
+                    badge: '🎯 2D Standard Recommendation',
+                    img: 'images/vision_2d.jpg',
+                    desc: '<strong>[선택 조건 부합 분석]</strong><br>평면 부품의 치수 측정, 부품 유무 및 바코드/OCR 인식에 최적화되어 있습니다.<br><br>• <strong>예상 추정 예산:</strong> 수백만 원 ~ 1,500만 원 이내<br>• <strong>주요 구성:</strong> 일반 2D 카메라 + 단일 조명(링/동축) + 표준 PC<br>• <strong>장점:</strong> 가장 저렴한 도입 비용 및 분당 300ea+ 이상의 초고속 검사 속도'
+                },
+                '25d': {
+                    title: '💡 추천 시스템: 2.5D 포토메트릭 비전',
+                    badge: '🎯 2.5D Photometric Stereo',
+                    img: 'images/vision_25d.jpg',
+                    desc: '<strong>[선택 조건 부합 분석]</strong><br>금속 가공 부품 표면의 난반사를 극복하고 미세 요철, 스크래치, 각인 형상을 복원하는 데 최적입니다.<br><br>• <strong>예상 추정 예산:</strong> 1,000만 원 ~ 2,500만 원<br>• <strong>주요 구성:</strong> 돔/멀티채널 조명 + 2D 카메라 + 조명 연산 컨트롤러<br>• <strong>장점:</strong> 고가 3D 센서 대비 40% 이상 비용을 절감하며 표면 입체감을 파악'
+                },
+                '3d': {
+                    title: '💡 추천 시스템: 3D 룰베이스 비전',
+                    badge: '🎯 3D Laser Profiler / Structured Light',
+                    img: 'images/vision_3d.jpg',
+                    desc: '<strong>[선택 조건 부합 분석]</strong><br>Z축 높이, 단차(GAP), 휨(평탄도) 및 절대 체적 측정이 필수적인 공정입니다.<br><br>• <strong>예상 추정 예산:</strong> 1,500만 원 ~ 3,500만 원<br>• <strong>주요 구성:</strong> 3D 레이저 프로파일러/구조광 센서 + 엔코더 제어기 + 고성능 PC<br>• <strong>장점:</strong> 조명 반사나 그림자에 영향받지 않는 3차원 정밀 수치 보증'
+                },
+                'ai': {
+                    title: '💡 추천 시스템: 딥러닝 (AI) 비전',
+                    badge: '🎯 AI Deep Learning (각형배터리/비정형)',
+                    img: 'images/vision_ai.jpg',
+                    desc: '<strong>[선택 조건 부합 분석]</strong><br>외관 비정형 얼룩, 용접 스패터, 핀홀 및 각형 배터리 캔/파우치 검사 등 룰베이스 정의가 불가능한 불량 판정에 특화되어 있습니다.<br><br>• <strong>예상 추정 예산:</strong> 3,000만 원 ~ 7,000만 원 이상<br>• <strong>주요 구성:</strong> 고해상도 카메라 + 고성능 GPU 워크스테이션 + AI 라이브러리<br>• <strong>장점:</strong> 사람 눈처럼 유연하고 복잡한 비정형 불량 감지 정확도 극대화'
+                }
+            };
+
+            const data = results[mainTech];
+            document.getElementById('modal-badge').textContent = data.badge;
+            document.getElementById('modal-title').textContent = data.title;
+            
+            const modalImg = document.getElementById('modal-img');
+            const imgFileName = data.img.split('/').pop();
+            
+            modalImg.onerror = function() {
+                if (this.src.includes('images/')) {
+                    this.src = imgFileName;
+                } else if (!this.src.includes('./')) {
+                    this.src = './' + imgFileName;
+                } else {
+                    this.onerror = null;
+                }
+            };
+            modalImg.src = data.img;
+
+            document.getElementById('modal-body-text').innerHTML = data.desc;
+
+            // Show Modal Popup
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+    </script>
+</body>
+</html>

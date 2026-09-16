@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로트추적 분석기 (미주 FMS)</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- ExcelJS & FileSaver.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #1f4e78;
+            --primary-light: #d9eaf7;
+            --primary-dark: #12304a;
+            --accent: #375623;
+            --accent-light: #e2f0d9;
+            --yellow-accent: #fff2cc;
+            --yellow-accent-dark: #7f6000;
+            --bg-app: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --success: #16a34a;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans KR', sans-serif;
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        header {
+            width: 100%;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 8px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        header h1 span {
+            font-size: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 400;
+        }
+
+        header p {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .header-right {
+            text-align: right;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .contact-info {
+            font-size: 10px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.15);
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Sidebar folding layout */
+        .sidebar {
+            width: 350px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: var(--transition);
+            opacity: 1;
+            transform-origin: left;
+        }
+
+        .container.sidebar-collapsed .sidebar {
+            width: 0px;
+            margin-right: -24px;
+            opacity: 0;
+            pointer-events: none;
+            overflow: hidden;
+            transform: scaleX(0);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 6px;
+        }
+
+        /* Toggle Option */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .toggle-container label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            width: 100%;
+        }
+
+        .toggle-container input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* Drag & Drop zone */
+        .dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 20px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #fafafa;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--primary);
+            background: #f0f6fc;
+        }
+
+        .dropzone svg {
+            width: 36px;
+            height: 36px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            transition: var(--transition);
+        }
+
+        .dropzone:hover svg {
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .dropzone p {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .dropzone strong {
+            color: var(--primary);
+            display: block;
+            margin-bottom: 2px;
+            font-size: 12px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* File List */
+        .file-list {
+            margin-top: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-app);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            border: 1px solid var(--border);
+        }
+
+        .file-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+            font-weight: 500;
+        }
+
+        .file-remove {
+            color: var(--danger);
+            cursor: pointer;
+            font-weight: 700;
+            padding: 2px 6px;
+        }
+
+        .file-remove:hover {
+            background: var(--danger-light);
+            border-radius: 4px;
+        }
+
+        /* Main Workspace Panel */
+        .main-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 0;
+            transition: var(--transition);
+        }
+
+        /* Rule Manager Styles */
+        .rule-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .rule-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .rule-form label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .rule-form input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .rule-form input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(31, 78, 120, 0.15);
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+            font-size: 13px;
+            padding: 8px 16px;
+        }
+
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-danger {
+            background-color: var(--danger-light);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .rule-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid var(--border);
+            padding: 6px;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .rule-badge {
+            font-family: monospace;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .rule-badge.yellow-badge {
+            background: var(--yellow-accent);
+            color: var(--yellow-accent-dark);
+        }
+
+        .rule-plates {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .rule-left {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        /* Results table styling with Sticky Header (틀고정) */
+        .results-container {
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            max-height: 750px;
+        }
+
+        .table-controls {
+            padding: 10px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            gap: 16px;
+        }
+
+        .table-summary {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .table-summary strong {
+            color: var(--primary-dark);
+        }
+
+        .legend {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            align-items: center;
+            background: #f8fafc;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        .legend-item label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .legend-item input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        #table-wrapper {
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            text-align: center;
+            table-layout: fixed;
+        }
+
+        /* Sticky Headers configuration */
+        thead tr:nth-child(1) th {
+            position: sticky;
+            top: 0;
+            z-index: 11;
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            box-shadow: inset 0 1px 0 #cbd5e1, inset 0 -1px 0 #cbd5e1;
+            height: 34px;
+        }
+
+        thead tr:nth-child(2) th {
+            position: sticky;
+            top: 34px;
+            z-index: 10;
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 700;
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            box-shadow: inset 0 -1px 0 #cbd5e1;
+            height: 34px;
+        }
+
+        td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #cbd5e1;
+            border-right: 1px solid #cbd5e1;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        td:first-child {
+            border-left: 1px solid #cbd5e1;
+        }
+
+        .row-green {
+            background-color: var(--accent-light);
+            color: #1e3a0f;
+        }
+
+        .row-yellow {
+            background-color: var(--yellow-accent);
+            color: #453505;
+        }
+
+        .row-unmapped {
+            background-color: var(--danger-light);
+            color: var(--danger);
+        }
+
+        /* Status select inside table */
+        .status-select {
+            padding: 1px 4px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1.5px solid rgba(0,0,0,0.15);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            margin-left: 6px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .status-select:focus {
+            border-color: var(--primary);
+        }
+
+        /* Editable Remarks Cell styling */
+        .remarks-cell {
+            text-align: left;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px dashed #94a3b8;
+            border-radius: 4px;
+            outline: none;
+            cursor: text;
+            min-height: 22px;
+            transition: var(--transition);
+            color: #1f2937;
+            font-weight: 400;
+        }
+
+        .remarks-cell:focus {
+            background: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(31, 78, 120, 0.1);
+        }
+
+        .empty-state {
+            padding: 60px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            color: #cbd5e1;
+            margin-bottom: 16px;
+        }
+
+        /* Tooltip & Utilities */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .badge-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .alert-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 8px 12px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #1e3a8a;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- HEADER SECTION -->
+    <header>
+        <div>
+            <h1>로트추적 분석 프로그램 <span>미주 FMS</span></h1>
+            <p>미국공장 FMS 생산 데이터(CSV)를 해독하여 한국 조립공장(Multi Cap) 기준 로트 매핑 및 특이사항을 정리합니다.</p>
+        </div>
+        <div class="header-right">
+            <div class="contact-info">문의: schjschj@stfc.co.kr(송충종)</div>
+            <button id="export-btn" class="btn btn-success" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                결과 다운로드 (Excel)
+            </button>
+        </div>
+    </header>
+</div>
+
+<div class="container">
+    <!-- SIDEBAR (Uploader & Configs) -->
+    <div class="sidebar">
+        
+        <!-- CSV UPLOADER CARD -->
+        <div class="card">
+            <div class="card-title">
+                <span>CSV 파일 업로드</span>
+                <span class="badge badge-danger" id="file-count-badge" style="display:none;">0개</span>
+            </div>
+            
+            <div class="dropzone" id="dropzone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <strong>파일 드래그 & 드롭</strong>
+                <p>또는 여기를 클릭하여 파일 선택</p>
+                <p style="font-size:11px; margin-top:8px; color:#94a3b8;">*.csv 파일 (복수 선택 가능)</p>
+                <input type="file" id="file-input" accept=".csv" multiple>
+            </div>
+
+            <div class="file-list" id="file-list">
+                <!-- Loaded files will appear here -->
+            </div>
+
+            <button id="analyze-btn" class="btn btn-primary" style="width: 100%; margin-top: 16px; padding: 10px;" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                데이터 분석 실행
+            </button>
+        </div>
+
+        <!-- OPTIONS CARD -->
+        <div class="card">
+            <div class="card-title">
+                <span>옵션 설정</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="toggle-container">
+                    <label style="font-weight: 500;">
+                        <input type="checkbox" id="use-press-toggle">
+                        한국 PRESS (Cap Plate) 매핑 사용
+                    </label>
+                </div>
+                <div style="background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block;">분석 기준 설정</span>
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                        <label style="font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                            <input type="radio" name="analysis-mode" value="korea" checked style="accent-color: var(--primary); cursor: pointer;">
+                            한국 Multi Cap 기준
+                        </label>
+                        <label style="font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                            <input type="radio" name="analysis-mode" value="usa" style="accent-color: var(--primary); cursor: pointer;">
+                            미국 Cap Assy 기준
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAPPING RULES CARD (Toggleable) -->
+        <div class="card" id="mapping-card" style="display: none;">
+            <div class="card-title">
+                <span>Cap Plate 매핑 규칙 설정</span>
+            </div>
+            <div class="alert-box">
+                Multi Cap 생산일에 해당하는 Cap Plate(PRESS) 날짜를 정의합니다. 범위 지정(예: 251202~251220)도 가능합니다.
+            </div>
+            
+            <div class="rule-form">
+                <div class="form-group">
+                    <label for="rule-multi">Multi Cap 생산일</label>
+                    <input type="text" id="rule-multi" placeholder="예: 260202 또는 251202~251220">
+                </div>
+                <div class="form-group">
+                    <label for="rule-plates">Cap Plate 생산일 목록</label>
+                    <input type="text" id="rule-plates" placeholder="예: 251215, 251216">
+                </div>
+                <button id="add-rule-btn" class="btn btn-primary" style="width: 100%; margin-top: 4px;">규칙 추가</button>
+            </div>
+
+            <div class="rule-list" id="rule-list">
+                <!-- Rules will appear here -->
+            </div>
+            <button id="reset-rules-btn" class="btn btn-danger" style="width: 100%; margin-top: 12px; padding: 6px; font-size:11px;">
+                초기 기본값으로 리셋
+            </button>
+        </div>
+
+    </div>
+
+    <!-- MAIN PANEL (Results Table) -->
+    <div class="main-panel">
+        
+        <div class="results-container">
+            <div class="table-controls">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Sidebar Toggle Button (밀고 펼치기) -->
+                    <button id="sidebar-toggle" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; background-color: var(--primary); display: flex; align-items: center; gap: 4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        <span>사이드바 접기</span>
+                    </button>
+                    <div class="table-summary" id="table-summary">
+                        업로드된 파일이 없습니다. 왼쪽에서 CSV 파일을 업로드하고 분석을 실행해 주세요.
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <!-- Checkbox Legend (필터 체크박스 범례) -->
+                    <div class="legend" id="table-legend" style="display: none;">
+                        <span class="legend-item" style="color: #375623;">
+                            <label>
+                                <input type="checkbox" id="filter-good" checked onchange="applyFilters()" style="accent-color: var(--accent);">
+                                <span class="legend-color" style="background-color: var(--accent-light);"></span>양호
+                            </label>
+                        </span>
+                        <span class="legend-item" style="color: #7f6000;">
+                            <label>
+                                <input type="checkbox" id="filter-suspicious" checked onchange="applyFilters()" style="accent-color: var(--yellow-accent-dark);">
+                                <span class="legend-color" style="background-color: var(--yellow-accent);"></span>의심
+                            </label>
+                        </span>
+                        <span class="legend-item" style="color: var(--danger);">
+                            <label>
+                                <input type="checkbox" id="filter-defect" checked onchange="applyFilters()" style="accent-color: var(--danger);">
+                                <span class="legend-color" style="background-color: var(--danger-light);"></span>불량
+                            </label>
+                        </span>
+                    </div>
+
+                    <div id="unmapped-alert" style="display:none; color:var(--danger); font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        미매핑 항목이 존재합니다.
+                    </div>
+                </div>
+            </div>
+
+            <div id="table-wrapper">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <p>분석 결과가 여기에 표시됩니다.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    // --- State Management ---
+    let uploadedFiles = [];
+    let mappingRules = [];
+    let analysisResult = []; // Consolidated analyzed rows
+    let userRemarksKorea = {};
+    let userRemarksUsa = {};
+    let userColorsKorea = {};
+    let userColorsUsa = {};
+
+    // Default mapping rules from the user reference image
+    const defaultRules = [
+        { multiCap: "260202", capPlates: "251215, 251216", isYellow: false },
+        { multiCap: "260203", capPlates: "251216, 251217", isYellow: false },
+        { 
+            multiCap: "251202~251220", 
+            capPlates: "251126, 251127, 251128, 251129, 251201, 251202, 251203, 251204, 251205, 251206, 251208, 251209, 251210, 251211, 251212", 
+            isYellow: true 
+        },
+        { multiCap: "260126", capPlates: "251213", isYellow: true },
+        { multiCap: "260127", capPlates: "251209, 251213, 251215", isYellow: true }
+    ];
+
+    // Load rules from localStorage or use defaults
+    function initRules() {
+        const stored = localStorage.getItem("lot_mapping_rules");
+        if (stored) {
+            try {
+                mappingRules = JSON.parse(stored);
+            } catch (e) {
+                mappingRules = [...defaultRules];
+            }
+        } else {
+            mappingRules = [...defaultRules];
+            saveRules();
+        }
+        renderRules();
+    }
+
+    function saveRules() {
+        localStorage.setItem("lot_mapping_rules", JSON.stringify(mappingRules));
+    }
+
+    // --- UI Event Listeners & Drag Drop ---
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("file-input");
+    const fileListEl = document.getElementById("file-list");
+    const fileBadge = document.getElementById("file-count-badge");
+    const analyzeBtn = document.getElementById("analyze-btn");
+    const exportBtn = document.getElementById("export-btn");
+    const usePressToggle = document.getElementById("use-press-toggle");
+    const mappingCard = document.getElementById("mapping-card");
+    const sidebarToggle = document.getElementById("sidebar-toggle");
+    const container = document.querySelector(".container:nth-of-type(2)"); // Second container holds sidebar + main
+
+    // Sidebar folding trigger
+    sidebarToggle.addEventListener("click", () => {
+        container.classList.toggle("sidebar-collapsed");
+        const isCollapsed = container.classList.contains("sidebar-collapsed");
+        if (isCollapsed) {
+            sidebarToggle.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                <span>사이드바 펼치기</span>
+            `;
+        } else {
+            sidebarToggle.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                <span>사이드바 접기</span>
+            `;
+        }
+    });
+
+    // Toggle Press card display and re-render table if results exist
+    usePressToggle.addEventListener("change", () => {
+        if (usePressToggle.checked) {
+            mappingCard.style.display = "block";
+        } else {
+            mappingCard.style.display = "none";
+        }
+        if (analysisResult.length > 0) {
+            let totalCount = analysisResult.reduce((sum, r) => sum + r.quantity, 0);
+            let hasUnmapped = analysisResult.some(r => r.isUnmapped);
+            renderTableRows(totalCount, hasUnmapped);
+        }
+    });
+
+    // Click to select
+    dropzone.addEventListener("click", () => fileInput.click());
+
+    // --- Bulletproof Drag-Drop handlers ---
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    dropzone.addEventListener("dragover", () => {
+        dropzone.classList.add("dragover");
+    }, false);
+
+    dropzone.addEventListener("dragleave", () => {
+        dropzone.classList.remove("dragover");
+    }, false);
+
+    dropzone.addEventListener("drop", (e) => {
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer && e.dataTransfer.files) {
+            handleFiles(e.dataTransfer.files);
+        }
+    }, false);
+
+    fileInput.addEventListener("change", (e) => {
+        handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.name.toLowerCase().endsWith(".csv")) {
+                if (!uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    uploadedFiles.push(file);
+                }
+            }
+        }
+        renderFiles();
+    }
+
+    function renderFiles() {
+        fileListEl.innerHTML = "";
+        if (uploadedFiles.length === 0) {
+            fileBadge.style.display = "none";
+            analyzeBtn.disabled = true;
+            return;
+        }
+
+        fileBadge.textContent = `${uploadedFiles.length}개`;
+        fileBadge.style.display = "inline-block";
+        analyzeBtn.disabled = false;
+
+        uploadedFiles.forEach((file, index) => {
+            const item = document.createElement("div");
+            item.className = "file-item";
+            
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "file-name";
+            nameSpan.textContent = file.name;
+            nameSpan.title = file.name;
+
+            const sizeSpan = document.createElement("span");
+            sizeSpan.style.color = "var(--text-muted)";
+            sizeSpan.style.marginRight = "8px";
+            sizeSpan.textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+
+            const rightDiv = document.createElement("div");
+            rightDiv.appendChild(sizeSpan);
+
+            const removeSpan = document.createElement("span");
+            removeSpan.className = "file-remove";
+            removeSpan.textContent = "×";
+            removeSpan.onclick = (e) => {
+                e.stopPropagation();
+                uploadedFiles.splice(index, 1);
+                renderFiles();
+            };
+            rightDiv.appendChild(removeSpan);
+
+            item.appendChild(nameSpan);
+            item.appendChild(rightDiv);
+            fileListEl.appendChild(item);
+        });
+    }
+
+    // --- Rule List Rendering & Editing ---
+    const ruleListEl = document.getElementById("rule-list");
+    const ruleMultiInput = document.getElementById("rule-multi");
+    const rulePlatesInput = document.getElementById("rule-plates");
+    const addRuleBtn = document.getElementById("add-rule-btn");
+    const resetRulesBtn = document.getElementById("reset-rules-btn");
+
+    function renderRules() {
+        ruleListEl.innerHTML = "";
+        
+        mappingRules.forEach((rule, index) => {
+            const item = document.createElement("div");
+            item.className = "rule-item";
+
+            const badge = document.createElement("span");
+            badge.className = `rule-badge ${rule.isYellow ? 'yellow-badge' : ''}`;
+            badge.textContent = rule.multiCap;
+
+            const plates = document.createElement("span");
+            plates.className = "rule-plates";
+            plates.textContent = rule.capPlates;
+            plates.title = rule.capPlates;
+
+            const left = document.createElement("div");
+            left.className = "rule-left";
+            left.appendChild(badge);
+            left.appendChild(plates);
+
+            const remove = document.createElement("button");
+            remove.className = "btn btn-danger";
+            remove.style.padding = "2px 6px";
+            remove.style.fontSize = "11px";
+            remove.textContent = "삭제";
+            remove.onclick = (e) => {
+                e.stopPropagation();
+                mappingRules.splice(index, 1);
+                saveRules();
+                renderRules();
+            };
+
+            item.appendChild(left);
+            item.appendChild(remove);
+            ruleListEl.appendChild(item);
+        });
+    }
+
+    addRuleBtn.addEventListener("click", () => {
+        const multiVal = ruleMultiInput.value.trim();
+        const platesVal = rulePlatesInput.value.trim();
+
+        if (!multiVal || !platesVal) {
+            alert("Multi Cap 날짜와 Cap Plate 목록을 모두 입력해주세요.");
+            return;
+        }
+
+        const datePattern = /^\d{6}$/;
+        const rangePattern = /^\d{6}~\d{6}$/;
+
+        if (!datePattern.test(multiVal) && !rangePattern.test(multiVal)) {
+            alert("Multi Cap 날짜 형식은 6자리 숫자(예: 260202) 또는 범위(예: 251202~251220) 여야 합니다.");
+            return;
+        }
+
+        const isYellow = multiVal.includes("~") || multiVal.startsWith("2512") || multiVal.startsWith("2601");
+
+        mappingRules.push({
+            multiCap: multiVal,
+            capPlates: platesVal,
+            isYellow: isYellow
+        });
+
+        ruleMultiInput.value = "";
+        rulePlatesInput.value = "";
+
+        saveRules();
+        renderRules();
+    });
+
+    resetRulesBtn.addEventListener("click", () => {
+        if (confirm("모든 매핑 규칙을 초기 기본값으로 리셋하시겠습니까?")) {
+            mappingRules = [...defaultRules];
+            saveRules();
+            renderRules();
+        }
+    });
+
+
+    // --- CSV Parsing and Lot Analysis Engine ---
+    
+    function parseCSVRow(line) {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+        result.push(current.trim());
+        return result;
+    }
+
+    function parseMultiCapQR(qr) {
+        if (!qr || qr.length < 11) return null;
+        const year = qr.substring(6, 8);
+        const monthChar = qr.charAt(8);
+        let month = "";
+        if (monthChar === 'A' || monthChar === 'a') {
+            month = "10";
+        } else if (monthChar === 'B' || monthChar === 'b') {
+            month = "11";
+        } else if (monthChar === 'C' || monthChar === 'c') {
+            month = "12";
+        } else if (monthChar >= '1' && monthChar <= '9') {
+            month = "0" + monthChar;
+        } else {
+            return null;
+        }
+        const day = qr.substring(9, 11);
+        return year + month + day;
+    }
+
+    function parseUSProdDate(datetimeStr) {
+        if (!datetimeStr) return "Unknown";
+        const match = datetimeStr.match(/^(\d{4})[./-](\d{2})[./-](\d{2})/);
+        if (match) {
+            const yy = match[1].substring(2);
+            const mm = match[2];
+            const dd = match[3];
+            return yy + mm + dd;
+        }
+        return datetimeStr;
+    }
+
+    function findMapping(dateStr) {
+        for (const rule of mappingRules) {
+            const ruleCap = rule.multiCap.trim();
+            if (ruleCap.includes("~")) {
+                const parts = ruleCap.split("~");
+                const start = parts[0].trim();
+                const end = parts[1].trim();
+                if (dateStr >= start && dateStr <= end) {
+                    return rule;
+                }
+            } else {
+                if (dateStr === ruleCap) {
+                    return rule;
+                }
+            }
+        }
+        return null;
+    }
+
+    // --- Grouping Engine and Mode Analyzers ---
+    document.getElementById("analyze-btn").onclick = async () => {
+        if (uploadedFiles.length === 0) return;
+
+        const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
+        if (mode === "korea") {
+            await analyzeKoreaMode();
+        } else {
+            await analyzeUsaMode();
+        }
+    };
+
+    async function analyzeKoreaMode() {
+        const groupings = {};
+        
+        for (const file of uploadedFiles) {
+            const text = await file.text();
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) continue;
+
+            const headerRow = parseCSVRow(lines[0]);
+            const qrIdx = headerRow.indexOf("QRCODE");
+            const timeIdx = headerRow.indexOf("MAIN_LOADING_TIME");
+
+            if (qrIdx === -1 || timeIdx === -1) {
+                alert(`파일 [${file.name}] 에 'QRCODE' 또는 'MAIN_LOADING_TIME' 열이 없습니다.`);
+                continue;
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+
+                const row = parseCSVRow(line);
+                if (row.length <= Math.max(qrIdx, timeIdx)) continue;
+
+                const qr = row[qrIdx];
+                const datetimeStr = row[timeIdx];
+
+                const usDate = parseUSProdDate(datetimeStr);
+                const multiCapDate = parseMultiCapQR(qr);
+
+                if (usDate && multiCapDate) {
+                    const mapRule = findMapping(multiCapDate);
+                    const lotKeyName = mapRule ? mapRule.multiCap : multiCapDate;
+                    
+                    if (!groupings[lotKeyName]) {
+                        groupings[lotKeyName] = {
+                            usDates: new Set(),
+                            quantity: 0
+                        };
+                    }
+                    groupings[lotKeyName].usDates.add(usDate);
+                    groupings[lotKeyName].quantity += 1;
+                }
+            }
+        }
+
+        const rows = [];
+        let totalCount = 0;
+        let hasUnmapped = false;
+
+        for (const lotKeyName in groupings) {
+            const data = groupings[lotKeyName];
+            const sortedUsDates = Array.from(data.usDates).sort().join(", ");
+            const usDateList = Array.from(data.usDates).sort();
+            const quantity = data.quantity;
+            totalCount += quantity;
+
+            const mapRule = mappingRules.find(r => r.multiCap === lotKeyName);
+            let capPlates = "";
+            let isYellow = false;
+            let isUnmapped = false;
+
+            if (mapRule) {
+                capPlates = mapRule.capPlates;
+                isYellow = mapRule.isYellow;
+            } else {
+                capPlates = "매핑 규칙 없음 (추가 필요)";
+                isUnmapped = true;
+                hasUnmapped = true;
+            }
+
+            let initialColorStatus = 'good';
+            if (isUnmapped) {
+                initialColorStatus = 'defect';
+            } else if (isYellow) {
+                initialColorStatus = 'suspicious';
+            }
+
+            if (userColorsKorea[lotKeyName]) {
+                initialColorStatus = userColorsKorea[lotKeyName];
+            }
+
+            rows.push({
+                usDate: sortedUsDates,
+                usDateList: usDateList,
+                multiCapDate: lotKeyName,
+                capPlates,
+                quantity,
+                isYellow,
+                isUnmapped,
+                colorStatus: initialColorStatus,
+                remarks: userRemarksKorea[lotKeyName] || "" 
+            });
+        }
+
+        rows.sort((a, b) => a.multiCapDate.localeCompare(b.multiCapDate));
+
+        analysisResult = rows;
+        
+        // Reset checkbox filters to checked on a new analysis
+        document.getElementById("filter-good").checked = true;
+        document.getElementById("filter-suspicious").checked = true;
+        document.getElementById("filter-defect").checked = true;
+
+        renderTableRows(totalCount, hasUnmapped);
+    }
+
+    async function analyzeUsaMode() {
+        const groupings = {}; // Key: usDate -> { multiCaps: { lot: qty }, totalQuantity: 0 }
+        
+        for (const file of uploadedFiles) {
+            const text = await file.text();
+            const lines = text.split(/\r?\n/);
+            if (lines.length < 2) continue;
+
+            const headerRow = parseCSVRow(lines[0]);
+            const qrIdx = headerRow.indexOf("QRCODE");
+            const timeIdx = headerRow.indexOf("MAIN_LOADING_TIME");
+
+            if (qrIdx === -1 || timeIdx === -1) {
+                alert(`파일 [${file.name}] 에 'QRCODE' 또는 'MAIN_LOADING_TIME' 열이 없습니다.`);
+                continue;
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line.trim()) continue;
+
+                const row = parseCSVRow(line);
+                if (row.length <= Math.max(qrIdx, timeIdx)) continue;
+
+                const qr = row[qrIdx];
+                const datetimeStr = row[timeIdx];
+
+                const usDate = parseUSProdDate(datetimeStr);
+                const multiCapDate = parseMultiCapQR(qr);
+
+                if (usDate && multiCapDate) {
+                    const mapRule = findMapping(multiCapDate);
+                    const lotKeyName = mapRule ? mapRule.multiCap : multiCapDate;
+                    
+                    if (!groupings[usDate]) {
+                        groupings[usDate] = {
+                            multiCaps: {},
+                            totalQuantity: 0
+                        };
+                    }
+                    if (!groupings[usDate].multiCaps[lotKeyName]) {
+                        groupings[usDate].multiCaps[lotKeyName] = 0;
+                    }
+                    groupings[usDate].multiCaps[lotKeyName] += 1;
+                    groupings[usDate].totalQuantity += 1;
+                }
+            }
+        }
+
+        const rows = [];
+        let totalCount = 0;
+        let hasUnmapped = false;
+
+        for (const usDate in groupings) {
+            const data = groupings[usDate];
+            const totalQty = data.totalQuantity;
+            totalCount += totalQty;
+
+            const sortedLots = Object.keys(data.multiCaps).sort();
+            
+            let isUnmappedAny = false;
+            let isYellowAny = false;
+            const pressLotSet = new Set();
+
+            const multiCapDetails = [];
+            sortedLots.forEach(lot => {
+                const qty = data.multiCaps[lot];
+                
+                const mapRule = mappingRules.find(r => r.multiCap === lot);
+                let lotCapPlates = "";
+                if (mapRule) {
+                    if (mapRule.isYellow) isYellowAny = true;
+                    lotCapPlates = mapRule.capPlates || "";
+                    if (mapRule.capPlates) {
+                        mapRule.capPlates.split(',').forEach(p => pressLotSet.add(p.trim()));
+                    }
+                } else {
+                    isUnmappedAny = true;
+                    hasUnmapped = true;
+                    lotCapPlates = "매핑 규칙 없음 (추가 필요)";
+                }
+
+                multiCapDetails.push({ 
+                    lot, 
+                    qty,
+                    capPlates: lotCapPlates
+                });
+            });
+
+            const pressLotsSorted = Array.from(pressLotSet).sort().join(", ");
+            let capPlates = pressLotsSorted;
+            if (isUnmappedAny) {
+                if (capPlates) {
+                    capPlates += ", 매핑 규칙 없음 포함";
+                } else {
+                    capPlates = "매핑 규칙 없음 (추가 필요)";
+                }
+            }
+
+            let initialColorStatus = 'good';
+            if (isUnmappedAny) {
+                initialColorStatus = 'defect';
+            } else if (isYellowAny) {
+                initialColorStatus = 'suspicious';
+            }
+
+            if (userColorsUsa[usDate]) {
+                initialColorStatus = userColorsUsa[usDate];
+            }
+
+            rows.push({
+                usDate: usDate,
+                multiCapDetails: multiCapDetails,
+                capPlates: capPlates,
+                quantity: totalQty,
+                isYellow: isYellowAny,
+                isUnmapped: isUnmappedAny,
+                colorStatus: initialColorStatus,
+                remarks: userRemarksUsa[usDate] || ""
+            });
+        }
+
+        rows.sort((a, b) => a.usDate.localeCompare(b.usDate));
+
+        analysisResult = rows;
+
+        document.getElementById("filter-good").checked = true;
+        document.getElementById("filter-suspicious").checked = true;
+        document.getElementById("filter-defect").checked = true;
+
+        renderTableRows(totalCount, hasUnmapped);
+    }
+
+    function updateRemark(key, text) {
+        const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
+        if (mode === "korea") {
+            userRemarksKorea[key] = text;
+            const row = analysisResult.find(r => r.multiCapDate === key);
+            if (row) row.remarks = text;
+        } else {
+            userRemarksUsa[key] = text;
+            const row = analysisResult.find(r => r.usDate === key);
+            if (row) row.remarks = text;
+        }
+    }
+
+    function changeRowStatus(key, status) {
+        const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
+        let row;
+        if (mode === "korea") {
+            userColorsKorea[key] = status;
+            row = analysisResult.find(r => r.multiCapDate === key);
+        } else {
+            userColorsUsa[key] = status;
+            row = analysisResult.find(r => r.usDate === key);
+        }
+
+        if (row) {
+            row.colorStatus = status;
+
+            // 같은 그룹에 속한 모든 TR 행을 한꺼번에 색상 변경
+            const newClass = status === 'good' ? 'row-green' : status === 'suspicious' ? 'row-yellow' : 'row-unmapped';
+            const allTrs = document.querySelectorAll('tbody tr');
+            allTrs.forEach(tr => {
+                if (tr.getAttribute('data-group') === key) {
+                    tr.className = newClass;
+                    tr.setAttribute('data-status', status);
+                }
+            });
+
+            // Re-apply filter rules immediately
+            applyFilters();
+        }
+    }
+
+    function applyFilters() {
+        const showGood = document.getElementById("filter-good").checked;
+        const showSuspicious = document.getElementById("filter-suspicious").checked;
+        const showDefect = document.getElementById("filter-defect").checked;
+
+        const rows = document.querySelectorAll("tbody tr");
+        rows.forEach(tr => {
+            const status = tr.getAttribute("data-status");
+            if (status === 'good') {
+                tr.style.display = showGood ? '' : 'none';
+            } else if (status === 'suspicious') {
+                tr.style.display = showSuspicious ? '' : 'none';
+            } else if (status === 'defect') {
+                tr.style.display = showDefect ? '' : 'none';
+            }
+        });
+
+        // Recalculate summary in header for only visible items
+        updateSummaryText();
+    }
+
+    function updateSummaryText() {
+        const showGood = document.getElementById("filter-good").checked;
+        const showSuspicious = document.getElementById("filter-suspicious").checked;
+        const showDefect = document.getElementById("filter-defect").checked;
+
+        let visibleGroups = 0;
+        let visibleCount = 0;
+
+        analysisResult.forEach(row => {
+            if (row.colorStatus === 'good' && !showGood) return;
+            if (row.colorStatus === 'suspicious' && !showSuspicious) return;
+            if (row.colorStatus === 'defect' && !showDefect) return;
+
+            visibleGroups++;
+            visibleCount += row.quantity;
+        });
+
+        const tableSummary = document.getElementById("table-summary");
+        tableSummary.innerHTML = `총 <strong>${visibleGroups}개</strong>의 그룹 표시 중 (표시 수량 합산: <strong>${visibleCount.toLocaleString()}개</strong> / 전체: ${analysisResult.length}개 그룹)`;
+    }
+
+    function renderTableRows(totalCount, hasUnmapped) {
+        const tableWrapper = document.getElementById("table-wrapper");
+        const tableSummary = document.getElementById("table-summary");
+        const unmappedAlert = document.getElementById("unmapped-alert");
+        const legendEl = document.getElementById("table-legend");
+
+        if (analysisResult.length === 0) {
+            tableWrapper.innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <p>분석 결과가 없습니다. CSV 파일 데이터를 확인해 주세요.</p>
+                </div>`;
+            tableSummary.textContent = "분석 완료되었으나 데이터가 비어 있습니다.";
+            unmappedAlert.style.display = "none";
+            legendEl.style.display = "none";
+            exportBtn.disabled = true;
+            return;
+        }
+
+        const isPressEnabled = usePressToggle.checked;
+        const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
+
+        tableSummary.innerHTML = `총 <strong>${analysisResult.length}개</strong>의 그룹 집계 완료 (누적 합산 수량: <strong>${totalCount.toLocaleString()}개</strong>)`;
+        unmappedAlert.style.display = (hasUnmapped && isPressEnabled) ? "flex" : "none";
+        legendEl.style.display = "flex";
+        exportBtn.disabled = false;
+
+        let colWidths = "";
+        let headerHtml = "";
+
+        if (mode === "korea") {
+            colWidths = isPressEnabled 
+                ? `
+                   <col style="width: 200px;">
+                   <col style="width: 240px;">
+                   <col style="width: 380px;">
+                   <col style="width: 130px;">
+                   <col style="width: 250px;">
+                  `
+                : `
+                   <col style="width: 250px;">
+                   <col style="width: 300px;">
+                   <col style="width: 150px;">
+                   <col style="width: 400px;">
+                  `;
+
+            headerHtml = isPressEnabled
+                ? `
+                    <tr class="super-header">
+                        <th>미국</th>
+                        <th>한국</th>
+                        <th>한국 PRESS</th>
+                        <th rowspan="2">로트 수량</th>
+                        <th rowspan="2">특이사항</th>
+                    </tr>
+                    <tr>
+                        <th>Cap Assy</th>
+                        <th>Multi Cap</th>
+                        <th>Cap Plate</th>
+                    </tr>
+                  `
+                : `
+                    <tr class="super-header">
+                        <th>미국</th>
+                        <th>한국</th>
+                        <th rowspan="2">로트 수량</th>
+                        <th rowspan="2">특이사항</th>
+                    </tr>
+                    <tr>
+                        <th>Cap Assy</th>
+                        <th>Multi Cap</th>
+                    </tr>
+                  `;
+        } else {
+            // USA mode columns structure
+            colWidths = isPressEnabled 
+                ? `
+                   <col style="width: 240px;">
+                   <col style="width: 340px;">
+                   <col style="width: 240px;">
+                   <col style="width: 130px;">
+                   <col style="width: 250px;">
+                  `
+                : `
+                   <col style="width: 250px;">
+                   <col style="width: 400px;">
+                   <col style="width: 150px;">
+                   <col style="width: 400px;">
+                  `;
+
+            headerHtml = isPressEnabled
+                ? `
+                    <tr class="super-header">
+                        <th>미국</th>
+                        <th>한국</th>
+                        <th>한국 PRESS</th>
+                        <th rowspan="2">로트 수량</th>
+                        <th rowspan="2">특이사항</th>
+                    </tr>
+                    <tr>
+                        <th>Cap Assy</th>
+                        <th>Multi Cap</th>
+                        <th>Cap Plate</th>
+                    </tr>
+                  `
+                : `
+                    <tr class="super-header">
+                        <th>미국</th>
+                        <th>한국</th>
+                        <th rowspan="2">로트 수량</th>
+                        <th rowspan="2">특이사항</th>
+                    </tr>
+                    <tr>
+                        <th>Cap Assy</th>
+                        <th>Multi Cap</th>
+                    </tr>
+                  `;
+        }
+
+        let tableHtml = `
+            <table>
+                ${colWidths}
+                <thead>
+                    ${headerHtml}
+                </thead>
+                <tbody>`;
+
+        analysisResult.forEach(row => {
+            let rowClass = "row-green";
+            if (row.colorStatus === 'defect') {
+                rowClass = "row-unmapped";
+            } else if (row.colorStatus === 'suspicious') {
+                rowClass = "row-yellow";
+            }
+
+            if (mode === "korea") {
+                const N = Math.max(1, row.usDateList.length);
+                let statusSelect = `
+                    <select class="status-select" onchange="changeRowStatus('${row.multiCapDate}', this.value)">
+                        <option value="good" ${row.colorStatus === 'good' ? 'selected' : ''}>양호</option>
+                        <option value="suspicious" ${row.colorStatus === 'suspicious' ? 'selected' : ''}>의심</option>
+                        <option value="defect" ${row.colorStatus === 'defect' ? 'selected' : ''}>불량</option>
+                    </select>
+                `;
+
+                for (let idx = 0; idx < N; idx++) {
+                    const usDateVal = row.usDateList[idx] || "";
+                    if (idx === 0) {
+                        tableHtml += `
+                            <tr class="${rowClass}" data-status="${row.colorStatus}" data-group="${row.multiCapDate}">
+                                <td>${usDateVal}</td>
+                                <td rowspan="${N}">
+                                    <span style="font-weight: 500; font-family: monospace;">${row.multiCapDate}</span>
+                                    ${statusSelect}
+                                </td>
+                                ${isPressEnabled ? `<td rowspan="${N}" style="text-align: left; padding-left: 15px;">${row.capPlates}</td>` : ''}
+                                <td rowspan="${N}" style="text-align: right; padding-right: 15px; font-weight: 600;">${row.quantity.toLocaleString()}</td>
+                                <td rowspan="${N}">
+                                    <div contenteditable="true" class="remarks-cell" 
+                                         onblur="updateRemark('${row.multiCapDate}', this.innerText)">${row.remarks}</div>
+                                </td>
+                            </tr>`;
+                    } else {
+                        tableHtml += `
+                            <tr class="${rowClass}" data-status="${row.colorStatus}" data-group="${row.multiCapDate}">
+                                <td>${usDateVal}</td>
+                            </tr>`;
+                    }
+                }
+            } else {
+                // USA Mode: 1 USA row merges with multiple Korea multi-cap rows
+                const N = Math.max(1, row.multiCapDetails.length);
+                let statusSelect = `
+                    <select class="status-select" onchange="changeRowStatus('${row.usDate}', this.value)">
+                        <option value="good" ${row.colorStatus === 'good' ? 'selected' : ''}>양호</option>
+                        <option value="suspicious" ${row.colorStatus === 'suspicious' ? 'selected' : ''}>의심</option>
+                        <option value="defect" ${row.colorStatus === 'defect' ? 'selected' : ''}>불량</option>
+                    </select>
+                `;
+
+                for (let idx = 0; idx < N; idx++) {
+                    const detail = row.multiCapDetails[idx] || { lot: "", qty: 0, capPlates: "" };
+                    const multiCapText = detail.lot ? `<span style="font-family: monospace; font-weight: 500;">${detail.lot}</span> (${detail.qty.toLocaleString()}개)` : "";
+                    const lotPressCell = isPressEnabled ? `<td style="text-align: left; padding-left: 15px;">${detail.capPlates}</td>` : '';
+
+                    if (idx === 0) {
+                        tableHtml += `
+                            <tr class="${rowClass}" data-status="${row.colorStatus}" data-group="${row.usDate}">
+                                <td rowspan="${N}">
+                                    <span style="font-weight: 500; font-family: monospace;">${row.usDate}</span>
+                                    ${statusSelect}
+                                </td>
+                                <td style="text-align: left; padding-left: 15px; line-height: 1.4;">${multiCapText}</td>
+                                ${lotPressCell}
+                                <td rowspan="${N}" style="text-align: right; padding-right: 15px; font-weight: 600;">${row.quantity.toLocaleString()}</td>
+                                <td rowspan="${N}">
+                                    <div contenteditable="true" class="remarks-cell" 
+                                         onblur="updateRemark('${row.usDate}', this.innerText)">${row.remarks}</div>
+                                </td>
+                            </tr>`;
+                    } else {
+                        tableHtml += `
+                            <tr class="${rowClass}" data-status="${row.colorStatus}" data-group="${row.usDate}">
+                                <td style="text-align: left; padding-left: 15px; line-height: 1.4;">${multiCapText}</td>
+                                ${lotPressCell}
+                            </tr>`;
+                    }
+                }
+            }
+        });
+
+        tableHtml += `</tbody></table>`;
+        tableWrapper.innerHTML = tableHtml;
+        
+        applyFilters();
+    }
+
+    // --- Excel Exporting with Styling (ExcelJS) ---
+    exportBtn.addEventListener("click", async () => {
+        if (analysisResult.length === 0) return;
+
+        // Fetch active filters
+        const showGood = document.getElementById("filter-good").checked;
+        const showSuspicious = document.getElementById("filter-suspicious").checked;
+        const showDefect = document.getElementById("filter-defect").checked;
+
+        const isPressEnabled = usePressToggle.checked;
+        const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("로트추적 분석 결과");
+        
+        sheet.views = [{ 
+            state: 'frozen', 
+            ySplit: 2, 
+            activeCell: 'A3', 
+            showGridLines: true 
+        }];
+
+        if (mode === "korea") {
+            if (isPressEnabled) {
+                sheet.columns = [
+                    { key: 'usDate', width: 22 },
+                    { key: 'multiCap', width: 22 },
+                    { key: 'capPlate', width: 45 },
+                    { key: 'quantity', width: 16 },
+                    { key: 'remarks', width: 35 }
+                ];
+                sheet.addRow(["미국", "한국", "한국 PRESS", "로트 수량", "특이사항"]);
+                sheet.addRow(["Cap Assy", "Multi Cap", "Cap Plate", "", ""]);
+                sheet.mergeCells('A1:A2');
+                sheet.mergeCells('B1:B2');
+                sheet.mergeCells('C1:C2');
+                sheet.mergeCells('D1:D2');
+                sheet.mergeCells('E1:E2');
+                
+                sheet.getCell('A1').value = "미국\nCap Assy";
+                sheet.getCell('B1').value = "한국\nMulti Cap";
+                sheet.getCell('C1').value = "한국 PRESS\nCap Plate";
+                sheet.getCell('D1').value = "로트 수량";
+                sheet.getCell('E1').value = "특이사항";
+            } else {
+                sheet.columns = [
+                    { key: 'usDate', width: 25 },
+                    { key: 'multiCap', width: 25 },
+                    { key: 'quantity', width: 18 },
+                    { key: 'remarks', width: 40 }
+                ];
+                sheet.addRow(["미국", "한국", "로트 수량", "특이사항"]);
+                sheet.addRow(["Cap Assy", "Multi Cap", "", ""]);
+                sheet.mergeCells('A1:A2');
+                sheet.mergeCells('B1:B2');
+                sheet.mergeCells('C1:C2');
+                sheet.mergeCells('D1:D2');
+                
+                sheet.getCell('A1').value = "미국\nCap Assy";
+                sheet.getCell('B1').value = "한국\nMulti Cap";
+                sheet.getCell('C1').value = "로트 수량";
+                sheet.getCell('D1').value = "특이사항";
+            }
+        } else {
+            // USA mode excel layout
+            if (isPressEnabled) {
+                sheet.columns = [
+                    { key: 'usDate', width: 22 },
+                    { key: 'multiCap', width: 35 },
+                    { key: 'capPlate', width: 45 },
+                    { key: 'quantity', width: 16 },
+                    { key: 'remarks', width: 35 }
+                ];
+                sheet.addRow(["미국", "한국", "한국 PRESS", "로트 수량", "특이사항"]);
+                sheet.addRow(["Cap Assy", "Multi Cap", "Cap Plate", "", ""]);
+                sheet.mergeCells('A1:A2');
+                sheet.mergeCells('B1:B2');
+                sheet.mergeCells('C1:C2');
+                sheet.mergeCells('D1:D2');
+                sheet.mergeCells('E1:E2');
+                
+                sheet.getCell('A1').value = "미국\nCap Assy";
+                sheet.getCell('B1').value = "한국\nMulti Cap";
+                sheet.getCell('C1').value = "한국 PRESS\nCap Plate";
+                sheet.getCell('D1').value = "로트 수량";
+                sheet.getCell('E1').value = "특이사항";
+            } else {
+                sheet.columns = [
+                    { key: 'usDate', width: 25 },
+                    { key: 'multiCap', width: 40 },
+                    { key: 'quantity', width: 18 },
+                    { key: 'remarks', width: 40 }
+                ];
+                sheet.addRow(["미국", "한국", "로트 수량", "특이사항"]);
+                sheet.addRow(["Cap Assy", "Multi Cap", "", ""]);
+                sheet.mergeCells('A1:A2');
+                sheet.mergeCells('B1:B2');
+                sheet.mergeCells('C1:C2');
+                sheet.mergeCells('D1:D2');
+                
+                sheet.getCell('A1').value = "미국\nCap Assy";
+                sheet.getCell('B1').value = "한국\nMulti Cap";
+                sheet.getCell('C1').value = "로트 수량";
+                sheet.getCell('D1').value = "특이사항";
+            }
+        }
+
+        const headerCellIds = isPressEnabled ? ['A1', 'B1', 'C1', 'D1', 'E1'] : ['A1', 'B1', 'C1', 'D1'];
+        headerCellIds.forEach(cellId => {
+            const cell = sheet.getCell(cellId);
+            cell.font = { name: 'Malgun Gothic', size: 10, bold: true, color: { argb: 'FF1F4E78' } };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFD9EAF7' }
+            };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: '000000' } },
+                left: { style: 'thin', color: { argb: '000000' } },
+                bottom: { style: 'thin', color: { argb: '000000' } },
+                right: { style: 'thin', color: { argb: '000000' } }
+            };
+        });
+
+        let currentRow = 3; // Data starts at row 3 (headers take rows 1 and 2)
+
+        // Add rows that match the active filters
+        analysisResult.forEach((row) => {
+            // Apply active filtering criteria to excel export
+            if (row.colorStatus === 'good' && !showGood) return;
+            if (row.colorStatus === 'suspicious' && !showSuspicious) return;
+            if (row.colorStatus === 'defect' && !showDefect) return;
+
+            let N = 1;
+            if (mode === "korea") {
+                N = Math.max(1, row.usDateList.length);
+            } else {
+                N = Math.max(1, row.multiCapDetails.length);
+            }
+
+            let bgColor = 'FFE2F0D9'; // Light green
+            let textColor = 'FF375623';
+            
+            if (row.colorStatus === 'defect') {
+                bgColor = 'FFFEE2E2'; // Light red
+                textColor = 'FFDC2626';
+            } else if (row.colorStatus === 'suspicious') {
+                bgColor = 'FFFFF2CC'; // Light yellow
+                textColor = 'FF7F6000';
+            }
+
+            for (let idx = 0; idx < N; idx++) {
+                let rowData = [];
+                if (mode === "korea") {
+                    const usDateVal = row.usDateList[idx] || "";
+                    if (idx === 0) {
+                        rowData = isPressEnabled
+                            ? [usDateVal, row.multiCapDate, row.capPlates, row.quantity, row.remarks]
+                            : [row.usDateList[0], row.multiCapDate, row.quantity, row.remarks];
+                    } else {
+                        rowData = isPressEnabled
+                            ? [usDateVal, "", "", "", ""]
+                            : [usDateVal, "", "", ""];
+                    }
+                } else {
+                    const detail = row.multiCapDetails[idx] || { lot: "", qty: 0, capPlates: "" };
+                    const multiCapExcelText = detail.lot ? `${detail.lot} (${detail.qty.toLocaleString()}개)` : "";
+                    const pressLotVal = detail.capPlates || "";
+                    
+                    if (idx === 0) {
+                        rowData = isPressEnabled
+                            ? [row.usDate, multiCapExcelText, pressLotVal, row.quantity, row.remarks]
+                            : [row.usDate, multiCapExcelText, row.quantity, row.remarks];
+                    } else {
+                        rowData = isPressEnabled
+                            ? ["", multiCapExcelText, pressLotVal, "", ""]
+                            : ["", multiCapExcelText, "", ""];
+                    }
+                }
+
+                const excelRow = sheet.addRow(rowData);
+                excelRow.height = 20;
+
+                // Loop through all cells including empty ones to apply styling
+                excelRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                    cell.font = { name: 'Malgun Gothic', size: 10, color: { argb: textColor } };
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: bgColor }
+                    };
+
+                    // Alignment
+                    if (mode === "korea") {
+                        if (isPressEnabled) {
+                            if (colNumber === 2 || colNumber === 3 || colNumber === 5) {
+                                cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                            } else if (colNumber === 4) {
+                                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                                cell.numFmt = '#,##0';
+                            } else {
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            }
+                        } else {
+                            if (colNumber === 2 || colNumber === 4) {
+                                cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                            } else if (colNumber === 3) {
+                                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                                cell.numFmt = '#,##0';
+                            } else {
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            }
+                        }
+                    } else {
+                        // USA mode alignment
+                        if (isPressEnabled) {
+                            if (colNumber === 2 || colNumber === 3 || colNumber === 5) {
+                                cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                            } else if (colNumber === 4) {
+                                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                                cell.numFmt = '#,##0';
+                            } else {
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            }
+                        } else {
+                            if (colNumber === 2 || colNumber === 4) {
+                                cell.alignment = { horizontal: 'left', vertical: 'middle', wrapText: true };
+                            } else if (colNumber === 3) {
+                                cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                                cell.numFmt = '#,##0';
+                            } else {
+                                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                            }
+                        }
+                    }
+
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+                });
+            }
+
+            // Apply cell merging in Excel for the spanned rows
+            if (N > 1) {
+                if (mode === "korea") {
+                    sheet.mergeCells(currentRow, 2, currentRow + N - 1, 2); // Multi Cap
+                    if (isPressEnabled) {
+                        sheet.mergeCells(currentRow, 3, currentRow + N - 1, 3); // PRESS
+                        sheet.mergeCells(currentRow, 4, currentRow + N - 1, 4); // Qty
+                        sheet.mergeCells(currentRow, 5, currentRow + N - 1, 5); // Remarks
+                    } else {
+                        sheet.mergeCells(currentRow, 3, currentRow + N - 1, 3); // Qty
+                        sheet.mergeCells(currentRow, 4, currentRow + N - 1, 4); // Remarks
+                    }
+                } else {
+                    sheet.mergeCells(currentRow, 1, currentRow + N - 1, 1); // US Cap Assy
+                    if (isPressEnabled) {
+                        sheet.mergeCells(currentRow, 4, currentRow + N - 1, 4); // Qty
+                        sheet.mergeCells(currentRow, 5, currentRow + N - 1, 5); // Remarks
+                    } else {
+                        sheet.mergeCells(currentRow, 3, currentRow + N - 1, 3); // Qty
+                        sheet.mergeCells(currentRow, 4, currentRow + N - 1, 4); // Remarks
+                    }
+                }
+            }
+
+            currentRow += N;
+        });
+
+        sheet.getRow(1).height = 20;
+        sheet.getRow(2).height = 20;
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        saveAs(blob, `로트추적_분석결과_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+
+    window.onload = () => {
+        initRules();
+        
+        // Listen to analysis mode changes and auto re-run if files exist
+        document.querySelectorAll('input[name="analysis-mode"]').forEach(radio => {
+            radio.addEventListener("change", () => {
+                if (uploadedFiles.length > 0) {
+                    document.getElementById("analyze-btn").click();
+                }
+            });
+        });
+    };
+</script>
+</body>
+</html>
