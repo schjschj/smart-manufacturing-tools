@@ -34,10 +34,10 @@
         radial-gradient(circle at 10% 12%, rgba(59, 130, 246, 0.16) 0%, transparent 40%),
         radial-gradient(circle at 90% 88%, rgba(139, 92, 246, 0.14) 0%, transparent 40%);
       background-attachment: fixed;
-      padding: 12px 24px;
+      padding: 10px 22px;
     }
     .wrapper {
-      max-width: 1480px;
+      max-width: 1520px;
       margin: 0 auto;
       width: 100%;
       height: 100%;
@@ -46,11 +46,11 @@
     }
     header {
       text-align: center;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       flex-shrink: 0;
     }
     h1 {
-      font-size: 2.1rem;
+      font-size: 2.05rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       margin-bottom: 2px;
@@ -60,9 +60,9 @@
       line-height: 1.15;
     }
     p.subtitle {
-      font-size: 0.86rem;
+      font-size: 0.84rem;
       color: var(--text-muted);
-      line-height: 1.35;
+      line-height: 1.3;
     }
     .grid {
       display: grid;
@@ -104,22 +104,22 @@
     .card-top {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       flex-shrink: 0;
     }
     .card-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
     }
     .icon-box {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       flex-shrink: 0;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -129,7 +129,7 @@
       min-width: 0;
     }
     .card-title-wrap h2 {
-      font-size: 0.98rem;
+      font-size: 0.96rem;
       font-weight: 700;
       color: #fff;
       white-space: nowrap;
@@ -138,36 +138,37 @@
       margin-bottom: 1px;
     }
     .card-title-wrap span.tag {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: #94a3b8;
       font-family: 'JetBrains Mono', monospace;
     }
     p.card-desc {
-      font-size: 0.78rem;
+      font-size: 0.77rem;
       color: var(--text-muted);
-      line-height: 1.35;
+      line-height: 1.36;
       display: -webkit-box;
-      -webkit-line-clamp: 2;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      margin-top: 1px;
     }
-    /* Thumbnail Container */
+    /* Expanded Thumbnail Container */
     .thumb-wrap {
       flex: 1;
-      min-height: 60px;
-      max-height: 110px;
-      margin: 4px 0;
+      min-height: 80px;
+      max-height: 135px;
+      margin: 5px 0;
       border-radius: 8px;
       overflow: hidden;
       position: relative;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: rgba(0, 0, 0, 0.3);
     }
     .thumb-wrap img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: top;
+      object-position: top center;
       display: block;
       transition: transform 0.3s ease;
     }
@@ -177,7 +178,7 @@
     .card-bottom {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
       flex-shrink: 0;
     }
     .tech-stack {
@@ -203,7 +204,7 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      padding: 6px 10px;
+      padding: 5px 10px;
       border-radius: 7px;
       font-size: 0.78rem;
       font-weight: 600;
@@ -232,7 +233,7 @@
     }
     footer {
       text-align: center;
-      padding-top: 6px;
+      padding-top: 5px;
       flex-shrink: 0;
       color: #64748b;
       font-size: 0.74rem;
@@ -251,8 +252,8 @@
         grid-template-rows: auto;
         flex: none;
       }
-      .card { min-height: 240px; }
-      .thumb-wrap { min-height: 90px; max-height: 140px; }
+      .card { min-height: 250px; }
+      .thumb-wrap { min-height: 110px; max-height: 160px; }
     }
   </style>
 </head>
@@ -274,7 +275,7 @@
               <span class="tag">imagetrans2</span>
             </div>
           </div>
-          <p class="card-desc">대용량 검사 이미지를 WebP, JPG, PNG, AVIF 포맷으로 변환하고 리사이즈 및 압축을 브라우저 내에서 즉시 처리합니다.</p>
+          <p class="card-desc">대용량 검사 이미지를 WebP, JPG, PNG, BMP 포맷으로 변환하고 해상도 리사이즈 및 압축을 처리하며, 조건별 Sorting, 육안선별을 위한 이미지 배분을 실행합니다.</p>
         </div>
         <div class="thumb-wrap">
           <img src="./assets/thumb-imagetrans2.jpg" alt="이미지 일괄 변환기 미리보기" loading="lazy">
@@ -282,8 +283,8 @@
         <div class="card-bottom">
           <div class="tech-stack">
             <span class="tech-chip">Canvas 2D</span>
-            <span class="tech-chip">WebP/AVIF</span>
-            <span class="tech-chip">100% Offline</span>
+            <span class="tech-chip">WebP/BMP/PNG</span>
+            <span class="tech-chip">Sorting & 배분</span>
           </div>
           <div class="card-actions">
             <a href="./imagetrans2/" class="btn btn-primary">앱 실행</a>
@@ -302,7 +303,7 @@
               <span class="tag">imagemeasure</span>
             </div>
           </div>
-          <p class="card-desc">현미경/비전 이미지 기준자 캘리브레이션, 선분 거리·박스·면적 정밀 측정 및 PDF 성적서를 자동 출력합니다.</p>
+          <p class="card-desc">비전 이미지를 캘리브레이션, 파인튜닝을 통해 치수&amp;면적을 측정합니다 (불량실물은 없는데 이미지만 있을 시)</p>
         </div>
         <div class="thumb-wrap">
           <img src="./assets/thumb-imagemeasure.jpg" alt="NanoMeasure 치수 측정 미리보기" loading="lazy">
@@ -310,8 +311,8 @@
         <div class="card-bottom">
           <div class="tech-stack">
             <span class="tech-chip">Scale Calibration</span>
-            <span class="tech-chip">jsPDF</span>
-            <span class="tech-chip">html2canvas</span>
+            <span class="tech-chip">Fine Tuning</span>
+            <span class="tech-chip">jsPDF Report</span>
           </div>
           <div class="card-actions">
             <a href="./imagemeasure/" class="btn btn-primary">앱 실행</a>
@@ -330,16 +331,16 @@
               <span class="tag">fms-measure-anomaly</span>
             </div>
           </div>
-          <p class="card-desc">설비 측정 데이터(CSV/Excel)의 SPC 통계 공정관리(Cp, Cpk, 관리한계선), 시계열 이상 탐지 및 파레토 분석을 수행합니다.</p>
+          <p class="card-desc">자동화 설비의 측정데이터(CSV,Excel) Raw 파일을 바탕으로 설비성 불량(LMS,수대성) 공정별 측정편차, SPC통계 공정분석, 시계열 이상 탐지 및 파레토 분석 등 다양한 품질적 분석을 수행합니다</p>
         </div>
         <div class="thumb-wrap">
           <img src="./assets/thumb-fms.jpg" alt="FMS 이상 탐지 미리보기" loading="lazy">
         </div>
         <div class="card-bottom">
           <div class="tech-stack">
-            <span class="tech-chip">Apache ECharts</span>
+            <span class="tech-chip">LMS/수대성 편차</span>
             <span class="tech-chip">SPC Cpk</span>
-            <span class="tech-chip">PapaParse</span>
+            <span class="tech-chip">ECharts</span>
           </div>
           <div class="card-actions">
             <a href="./fms-measure-anomaly/" class="btn btn-primary">앱 실행</a>
@@ -358,16 +359,16 @@
               <span class="tag">lottracking</span>
             </div>
           </div>
-          <p class="card-desc">생산 공정 전주기(원소재~가공~검사) Lot 계보를 역추적하여 불량 발생 시 설비/공정 상관관계를 분석하고 서식 엑셀로 내보냅니다.</p>
+          <p class="card-desc">양산-인천-미주 공정의 투입 로트를 정전개,역전개하여, 불량 발생시 신속하고 정확한 Risk Range 를 설정합니다</p>
         </div>
         <div class="thumb-wrap">
           <img src="./assets/thumb-lottracking.jpg" alt="로트추적 분석기 미리보기" loading="lazy">
         </div>
         <div class="card-bottom">
           <div class="tech-stack">
-            <span class="tech-chip">ExcelJS</span>
-            <span class="tech-chip">Genealogy</span>
-            <span class="tech-chip">In-Memory Index</span>
+            <span class="tech-chip">양산-인천-미주</span>
+            <span class="tech-chip">정전개/역전개</span>
+            <span class="tech-chip">Risk Range</span>
           </div>
           <div class="card-actions">
             <a href="./lottracking/" class="btn btn-primary">앱 실행</a>
@@ -393,7 +394,7 @@
         </div>
         <div class="card-bottom">
           <div class="tech-stack">
-            <span class="tech-chip">Chart.js</span>
+            <span class="tech-chip">2D/2.5D/3D/AI</span>
             <span class="tech-chip">Radar Matrix</span>
             <span class="tech-chip">ROI Simulator</span>
           </div>
@@ -414,7 +415,7 @@
               <span class="tag">sftc-overtime</span>
             </div>
           </div>
-          <p class="card-desc">그룹웨어 연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 SSE 터미널 로그 모니터링을 지원합니다.</p>
+          <p class="card-desc">연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 로그 모니터링을 확인합니다.</p>
         </div>
         <div class="thumb-wrap">
           <img src="./assets/thumb-sftc.jpg" alt="SFTC 연장근무 자동등록 미리보기" loading="lazy">
@@ -423,7 +424,7 @@
           <div class="tech-stack">
             <span class="tech-chip">SSE Streaming</span>
             <span class="tech-chip">Cron Schedule</span>
-            <span class="tech-chip">Auto Registration</span>
+            <span class="tech-chip">로그 모니터링</span>
           </div>
           <div class="card-actions">
             <a href="./sftc-overtime/" class="btn btn-primary">UI 열기</a>

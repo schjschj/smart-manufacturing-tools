@@ -9,12 +9,12 @@
 
 | 도구명 | 디렉토리 | 주요 기능 및 특징 | 원본 / 라이브 데모 |
 | :--- | :--- | :--- | :--- |
-| **이미지 일괄 변환기** | [`imagetrans2/`](./imagetrans2) | 대용량 검사 이미지 WebP/JPG/PNG/AVIF 포맷 변환, 리사이즈, 압축 최적화 (100% 브라우저 메모리 처리) | [Netlify](https://imagetrans2.netlify.app/) |
-| **NanoMeasure 치수 측정** | [`imagemeasure/`](./imagemeasure) | 현미경/비전 이미지 기준자 캘리브레이션, 결함 치수(거리, 박스, 면적) 정밀 측정 및 PDF 성적서 출력 | [Netlify](https://imagemeasure.netlify.app/) |
-| **FMS 데이터 분석 & 이상 탐지** | [`fms-measure-anomaly/`](./fms-measure-anomaly) | 설비 측정 데이터(CSV/Excel) 실시간 파싱, SPC 통계 공정관리(Cp, Cpk, UCL/LCL), 이상 탐지 및 파레토 분석 | [Cloudflare](https://measure.schjschj.workers.dev/) |
-| **로트추적 분석기 (미주 FMS)** | [`lottracking/`](./lottracking) | 전공정(원소재~가공~검사) Lot 이력 역추적(Genealogy Tracking), 설비/불량 상관분석 및 서식 보존 엑셀 다운로드 | [Netlify](https://lottracking.netlify.app/) |
-| **비전 방식별 비교 대시보드** | [`vision-inspection-dashboard/`](./vision-inspection-dashboard) | 머신비전 4대 기술(2D, 2.5D, 3D, AI) 다차원 비교, 레이더 차트, 결함 매트릭스 및 설비 ROI 시뮬레이터 | [Netlify](https://magical-narwhal-ae37fe.netlify.app/) |
-| **SFTC 연장근무 자동등록** | [`sftc-overtime/`](./sftc-overtime) | 그룹웨어 연장근무 신청 자동화, 매일 정기 실행 예약 스케줄러, 실시간 SSE 터미널 로그 스트리밍 | [Cloudflare Tunnel](https://meters-gui-dependence-confidentiality.trycloudflare.com/) |
+| **이미지 일괄 변환기** | [`imagetrans2/`](./imagetrans2) | 대용량 검사 이미지를 WebP, JPG, PNG, BMP 포맷으로 변환하고 해상도 리사이즈 및 압축을 처리하며, 조건별 Sorting, 육안선별을 위한 이미지 배분을 실행 | [Netlify](https://imagetrans2.netlify.app/) |
+| **NanoMeasure 치수 측정** | [`imagemeasure/`](./imagemeasure) | 비전 이미지를 캘리브레이션, 파인튜닝을 통해 치수&면적을 측정 (불량실물은 없는데 이미지만 있을 시) | [Netlify](https://imagemeasure.netlify.app/) |
+| **FMS 데이터 분석 & 이상 탐지** | [`fms-measure-anomaly/`](./fms-measure-anomaly) | 자동화 설비의 측정데이터(CSV,Excel) Raw 파일을 바탕으로 설비성 불량(LMS,수대성) 공정별 측정편차, SPC통계 공정분석, 시계열 이상 탐지 및 파레토 분석 등 다양한 품질적 분석 수행 | [Cloudflare](https://measure.schjschj.workers.dev/) |
+| **로트추적 분석기 (미주 FMS)** | [`lottracking/`](./lottracking) | 양산-인천-미주 공정의 투입 로트를 정전개,역전개하여, 불량 발생시 신속하고 정확한 Risk Range 설정 | [Netlify](https://lottracking.netlify.app/) |
+| **비전 방식별 비교 대시보드** | [`vision-inspection-dashboard/`](./vision-inspection-dashboard) | 머신비전 4대 기술(2D, 2.5D, 3D, AI)의 검출력, 택트타임, 조명 민감도, 투자비를 레이더 차트로 비교하고 ROI 시뮬레이션 | [Netlify](https://magical-narwhal-ae37fe.netlify.app/) |
+| **SFTC 연장근무 자동등록** | [`sftc-overtime/`](./sftc-overtime) | 연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 로그 모니터링 확인 | [Cloudflare Tunnel](https://meters-gui-dependence-confidentiality.trycloudflare.com/) |
 
 ---
 
