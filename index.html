@@ -17,7 +17,7 @@
       --accent-glow: rgba(59, 130, 246, 0.28);
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --radius: 12px;
+      --radius: 11px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
@@ -31,13 +31,13 @@
       display: flex;
       flex-direction: column;
       background-image: 
-        radial-gradient(circle at 10% 12%, rgba(59, 130, 246, 0.16) 0%, transparent 40%),
-        radial-gradient(circle at 90% 88%, rgba(139, 92, 246, 0.14) 0%, transparent 40%);
+        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.14) 0%, transparent 40%);
       background-attachment: fixed;
-      padding: 10px 22px;
+      padding: 8px 18px;
     }
     .wrapper {
-      max-width: 1520px;
+      max-width: 1720px;
       margin: 0 auto;
       width: 100%;
       height: 100%;
@@ -46,29 +46,30 @@
     }
     header {
       text-align: center;
-      margin-bottom: 6px;
+      margin-bottom: 5px;
       flex-shrink: 0;
     }
     h1 {
-      font-size: 2.05rem;
+      font-size: 1.85rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
       background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       line-height: 1.15;
     }
     p.subtitle {
-      font-size: 0.84rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      line-height: 1.3;
+      line-height: 1.25;
     }
+    /* 2 rows x 4 columns Grid */
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       grid-template-rows: repeat(2, 1fr);
-      gap: 10px;
+      gap: 8px;
       flex: 1;
       min-height: 0;
     }
@@ -78,7 +79,7 @@
       -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 10px 14px;
+      padding: 8px 11px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -98,28 +99,28 @@
     .card:hover {
       transform: translateY(-2px);
       border-color: var(--card-hover-border);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35), 0 0 16px var(--accent-glow);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 14px var(--accent-glow);
     }
     .card:hover::before { opacity: 1; }
     .card-top {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
       flex-shrink: 0;
     }
     .card-header {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 8px;
     }
     .icon-box {
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       flex-shrink: 0;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -129,40 +130,41 @@
       min-width: 0;
     }
     .card-title-wrap h2 {
-      font-size: 0.96rem;
+      font-size: 0.88rem;
       font-weight: 700;
       color: #fff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 1px;
     }
     .card-title-wrap span.tag {
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       color: #94a3b8;
       font-family: 'JetBrains Mono', monospace;
+      display: block;
+      line-height: 1.1;
     }
     p.card-desc {
-      font-size: 0.77rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
-      line-height: 1.36;
+      line-height: 1.32;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
       margin-top: 1px;
     }
-    /* Expanded Thumbnail Container */
+    /* Thumbnail Container */
     .thumb-wrap {
       flex: 1;
-      min-height: 80px;
-      max-height: 135px;
-      margin: 5px 0;
-      border-radius: 8px;
+      min-height: 70px;
+      max-height: 125px;
+      margin: 4px 0;
+      border-radius: 7px;
       overflow: hidden;
       position: relative;
       border: 1px solid rgba(255, 255, 255, 0.09);
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.35);
     }
     .thumb-wrap img {
       width: 100%;
@@ -178,25 +180,26 @@
     .card-bottom {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 4px;
       flex-shrink: 0;
     }
     .tech-stack {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 3px;
     }
     .tech-chip {
-      font-size: 0.65rem;
-      padding: 1px 6px;
+      font-size: 0.62rem;
+      padding: 1px 5px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 4px;
       color: #cbd5e1;
+      line-height: 1.2;
     }
     .card-actions {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
     .btn {
       flex: 1;
@@ -204,14 +207,15 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
-      padding: 5px 10px;
-      border-radius: 7px;
-      font-size: 0.78rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.74rem;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s ease;
       cursor: pointer;
       white-space: nowrap;
+      line-height: 1.3;
     }
     .btn-primary {
       background: #2563eb;
@@ -233,27 +237,27 @@
     }
     footer {
       text-align: center;
-      padding-top: 5px;
+      padding-top: 4px;
       flex-shrink: 0;
       color: #64748b;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
     }
     footer a { color: #60a5fa; text-decoration: none; }
     footer a:hover { text-decoration: underline; }
 
-    @media (max-height: 660px), (max-width: 900px) {
+    @media (max-height: 660px), (max-width: 1100px) {
       html, body {
         height: auto;
         overflow-y: auto;
       }
-      body { padding: 18px 14px; }
+      body { padding: 14px 10px; }
       .grid {
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         grid-template-rows: auto;
         flex: none;
       }
-      .card { min-height: 250px; }
-      .thumb-wrap { min-height: 110px; max-height: 160px; }
+      .card { min-height: 240px; }
+      .thumb-wrap { min-height: 100px; max-height: 140px; }
     }
   </style>
 </head>
@@ -261,7 +265,7 @@
   <div class="wrapper">
     <header>
       <h1>SANG-A Quality Tool</h1>
-      <p class="subtitle">품질 보증, 검사 비전 분석, 설비 공정 이상 탐지 및 업무 자동화를 위한 통합 엔지니어링 웹 플랫폼</p>
+      <p class="subtitle">품질 보증, 검사 비전 분석, 설비 공정 이상 탐지, 글로벌 물류 시뮬레이션 및 업무 자동화 통합 엔지니어링 웹 플랫폼</p>
     </header>
 
     <div class="grid">
@@ -283,8 +287,8 @@
         <div class="card-bottom">
           <div class="tech-stack">
             <span class="tech-chip">Canvas 2D</span>
-            <span class="tech-chip">WebP/BMP/PNG</span>
-            <span class="tech-chip">Sorting & 배분</span>
+            <span class="tech-chip">WebP/BMP</span>
+            <span class="tech-chip">Sorting 배분</span>
           </div>
           <div class="card-actions">
             <a href="./imagetrans2/" class="btn btn-primary">앱 실행</a>
@@ -299,7 +303,7 @@
           <div class="card-header">
             <div class="icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🔬</div>
             <div class="card-title-wrap">
-              <h2>NanoMeasure 결함 치수 측정</h2>
+              <h2>NanoMeasure 치수 측정</h2>
               <span class="tag">imagemeasure</span>
             </div>
           </div>
@@ -310,9 +314,9 @@
         </div>
         <div class="card-bottom">
           <div class="tech-stack">
-            <span class="tech-chip">Scale Calibration</span>
+            <span class="tech-chip">Calibration</span>
             <span class="tech-chip">Fine Tuning</span>
-            <span class="tech-chip">jsPDF Report</span>
+            <span class="tech-chip">PDF 성적서</span>
           </div>
           <div class="card-actions">
             <a href="./imagemeasure/" class="btn btn-primary">앱 실행</a>
@@ -338,7 +342,7 @@
         </div>
         <div class="card-bottom">
           <div class="tech-stack">
-            <span class="tech-chip">LMS/수대성 편차</span>
+            <span class="tech-chip">LMS/수대성</span>
             <span class="tech-chip">SPC Cpk</span>
             <span class="tech-chip">ECharts</span>
           </div>
@@ -429,6 +433,62 @@
           <div class="card-actions">
             <a href="./sftc-overtime/" class="btn btn-primary">UI 열기</a>
             <a href="https://meters-gui-dependence-confidentiality.trycloudflare.com/" target="_blank" class="btn btn-secondary">라이브 터널 ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. retro-inventory-monitor (NEW) -->
+      <div class="card" style="--card-highlight: #14b8a6;">
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(20, 184, 166, 0.15); color: #2dd4bf;">🌐</div>
+            <div class="card-title-wrap">
+              <h2>글로벌 재고·물류 모니터</h2>
+              <span class="tag">retro-inventory-monitor</span>
+            </div>
+          </div>
+          <p class="card-desc">인천-미주-고객 거점별 재고현황 및 물류 이송을 시뮬레이션</p>
+        </div>
+        <div class="thumb-wrap">
+          <img src="./assets/thumb-retro-inventory.jpg" alt="글로벌 재고 물류 모니터 미리보기" loading="lazy">
+        </div>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">인천-미주-고객</span>
+            <span class="tech-chip">물류 이송 시뮬</span>
+            <span class="tech-chip">전술 지휘센터</span>
+          </div>
+          <div class="card-actions">
+            <a href="https://retro-inventory-monitor.vercel.app/" target="_blank" class="btn btn-primary">웹앱 실행 ↗</a>
+            <a href="https://github.com/schjschj/retro-inventory-monitor" target="_blank" class="btn btn-secondary">GitHub ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. automation-alarm-monitor (NEW) -->
+      <div class="card" style="--card-highlight: #e11d48;">
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(225, 29, 72, 0.15); color: #fb7185;">🚨</div>
+            <div class="card-title-wrap">
+              <h2>설비 알람 이력 분석기</h2>
+              <span class="tag">automation-alarm-monitor</span>
+            </div>
+          </div>
+          <p class="card-desc">자동화 설비의 알람 이력을 바탕으로 공정별 설비 특이점을 분석</p>
+        </div>
+        <div class="thumb-wrap">
+          <img src="./assets/thumb-alarm.jpg" alt="설비 알람 이력 분석기 미리보기" loading="lazy">
+        </div>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">알람 이력 분석</span>
+            <span class="tech-chip">공정별 특이점</span>
+            <span class="tech-chip">Streamlit</span>
+          </div>
+          <div class="card-actions">
+            <a href="https://automation-alarm-monitor.onrender.com/" target="_blank" class="btn btn-primary">모니터 실행 ↗</a>
+            <a href="https://automation-alarm-monitor.onrender.com/" target="_blank" class="btn btn-secondary">라이브 ↗</a>
           </div>
         </div>
       </div>
