@@ -3,92 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Manufacturing & Vision Inspection Suite | 제조 스마트 비전 도구 모음</title>
+  <title>SANG-A Quality Tool | 스마트 품질 & 제조 엔지니어링 스위트</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: rgba(22, 27, 46, 0.75);
+      --bg: #090d16;
+      --card-bg: rgba(18, 23, 39, 0.82);
       --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(59, 130, 246, 0.4);
       --accent: #3b82f6;
-      --accent-glow: rgba(59, 130, 246, 0.35);
-      --text: #f1f5f9;
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --text: #f8fafc;
       --text-muted: #94a3b8;
-      --radius: 16px;
+      --radius: 14px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
       background-image: 
-        radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+        radial-gradient(circle at 12% 15%, rgba(59, 130, 246, 0.16) 0%, transparent 40%),
+        radial-gradient(circle at 88% 85%, rgba(139, 92, 246, 0.14) 0%, transparent 40%);
       background-attachment: fixed;
-      padding: 40px 24px;
+      padding: 16px 28px;
     }
-    .container {
-      max-width: 1200px;
+    .wrapper {
+      max-width: 1440px;
       margin: 0 auto;
       width: 100%;
-      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
     header {
       text-align: center;
-      margin-bottom: 50px;
+      margin-bottom: 12px;
+      flex-shrink: 0;
     }
     .badge-top {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
+      padding: 3px 12px;
       background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.28);
       border-radius: 999px;
-      font-size: 0.85rem;
+      font-size: 0.74rem;
       font-weight: 600;
       color: #60a5fa;
-      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
     }
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.1rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      margin-bottom: 12px;
-      background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+      margin-bottom: 4px;
+      background: linear-gradient(135deg, #ffffff 40%, #93c5fd 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      line-height: 1.15;
     }
     p.subtitle {
-      font-size: 1.1rem;
+      font-size: 0.88rem;
       color: var(--text-muted);
-      max-width: 680px;
-      margin: 0 auto;
-      line-height: 1.6;
+      line-height: 1.4;
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 24px;
-      margin-bottom: 50px;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
     }
     .card {
       background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 14px 18px;
       display: flex;
       flex-direction: column;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
       overflow: hidden;
+      min-height: 0;
     }
     .card::before {
       content: '';
@@ -96,233 +107,309 @@
       top: 0; left: 0; right: 0; height: 3px;
       background: linear-gradient(90deg, transparent, var(--card-highlight, #3b82f6), transparent);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.25s ease;
     }
     .card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4), 0 0 24px var(--accent-glow);
+      transform: translateY(-2px);
+      border-color: var(--card-hover-border);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 0 18px var(--accent-glow);
     }
     .card:hover::before { opacity: 1; }
+    .card-top {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
     .card-header {
       display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 16px;
+      align-items: center;
+      gap: 12px;
     }
     .icon-box {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       flex-shrink: 0;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-title-wrap {
+      flex: 1;
+      min-width: 0;
     }
     .card-title-wrap h2 {
-      font-size: 1.25rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: #fff;
-      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
     }
     .card-title-wrap span.tag {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #94a3b8;
       font-family: 'JetBrains Mono', monospace;
     }
     p.card-desc {
-      font-size: 0.95rem;
+      font-size: 0.81rem;
       color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 20px;
-      flex: 1;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .card-bottom {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
     }
     .tech-stack {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 24px;
+      gap: 4px;
     }
     .tech-chip {
-      font-size: 0.75rem;
-      padding: 4px 10px;
+      font-size: 0.68rem;
+      padding: 2px 7px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
+      border-radius: 5px;
       color: #cbd5e1;
     }
     .card-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }
     .btn {
       flex: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 0.9rem;
+      gap: 5px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
       font-weight: 600;
       text-decoration: none;
       transition: all 0.2s ease;
       cursor: pointer;
+      white-space: nowrap;
     }
     .btn-primary {
-      background: #3b82f6;
+      background: #2563eb;
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.12);
     }
     .btn-primary:hover {
-      background: #2563eb;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      background: #1d4ed8;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
     }
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.05);
       color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.09);
     }
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.1);
       color: #fff;
     }
     footer {
       text-align: center;
-      padding-top: 30px;
-      border-top: 1px solid var(--card-border);
-      color: var(--text-muted);
-      font-size: 0.88rem;
+      padding-top: 10px;
+      flex-shrink: 0;
+      color: #64748b;
+      font-size: 0.76rem;
     }
     footer a { color: #60a5fa; text-decoration: none; }
     footer a:hover { text-decoration: underline; }
+
+    @media (max-height: 680px), (max-width: 900px) {
+      html, body {
+        height: auto;
+        overflow-y: auto;
+      }
+      body { padding: 24px 16px; }
+      .grid {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-rows: auto;
+        flex: none;
+      }
+      .card { min-height: 220px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="wrapper">
     <header>
-      <div class="badge-top">🚀 Smart Factory & Machine Vision Web Suite</div>
-      <h1>스마트 제조 & 머신비전 통합 웹 도구 모음</h1>
-      <p class="subtitle">제조 현장 및 연구소의 이미지 변환, 결함 치수 정밀 측정, FMS 설비 데이터 이상 탐지, 로트 이력 추적 및 비전 기술 비교 대시보드 5종 모음입니다.</p>
+      <div class="badge-top">🏭 SANG-A FRONT-TECH • SMART QUALITY SUITE</div>
+      <h1>SANG-A Quality Tool</h1>
+      <p class="subtitle">품질 보증, 검사 비전 분석, 설비 공정 이상 탐지 및 업무 자동화를 위한 통합 엔지니어링 웹 플랫폼</p>
     </header>
 
     <div class="grid">
       <!-- 1. imagetrans2 -->
       <div class="card" style="--card-highlight: #3b82f6;">
-        <div class="card-header">
-          <div class="icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">🖼️</div>
-          <div class="card-title-wrap">
-            <h2>이미지 일괄 변환기</h2>
-            <span class="tag">imagetrans2</span>
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">🖼️</div>
+            <div class="card-title-wrap">
+              <h2>이미지 일괄 변환기</h2>
+              <span class="tag">imagetrans2</span>
+            </div>
           </div>
+          <p class="card-desc">대용량 검사 이미지를 WebP, JPG, PNG, AVIF 포맷으로 변환하고 해상도 리사이즈 및 압축을 브라우저 내에서 즉시 처리합니다.</p>
         </div>
-        <p class="card-desc">대용량 이미지를 웹 브라우저 내에서 즉시 WEBP, JPG, PNG, AVIF 등으로 포맷 변환 및 리사이즈, 품질 압축을 수행하는 경량 도구입니다.</p>
-        <div class="tech-stack">
-          <span class="tech-chip">HTML5 Canvas</span>
-          <span class="tech-chip">Vanilla JS</span>
-          <span class="tech-chip">Dark UI</span>
-          <span class="tech-chip">Offline Privacy</span>
-        </div>
-        <div class="card-actions">
-          <a href="./imagetrans2/" class="btn btn-primary">앱 실행하기</a>
-          <a href="https://imagetrans2.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">Canvas 2D</span>
+            <span class="tech-chip">WebP/AVIF</span>
+            <span class="tech-chip">100% Offline</span>
+          </div>
+          <div class="card-actions">
+            <a href="./imagetrans2/" class="btn btn-primary">앱 실행</a>
+            <a href="https://imagetrans2.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+          </div>
         </div>
       </div>
 
       <!-- 2. imagemeasure -->
       <div class="card" style="--card-highlight: #10b981;">
-        <div class="card-header">
-          <div class="icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🔬</div>
-          <div class="card-title-wrap">
-            <h2>NanoMeasure Defect 측정 시스템</h2>
-            <span class="tag">imagemeasure</span>
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🔬</div>
+            <div class="card-title-wrap">
+              <h2>NanoMeasure 결함 치수 측정</h2>
+              <span class="tag">imagemeasure</span>
+            </div>
           </div>
+          <p class="card-desc">현미경/비전 이미지 기준자 캘리브레이션, 선분 거리·박스·면적 정밀 측정 및 PDF 검사 성적서를 자동 출력합니다.</p>
         </div>
-        <p class="card-desc">현미경/비전 검사 이미지에서 기준자 캘리브레이션을 수행하고 미세 결함의 선분 거리, 바운딩 박스, 면적을 측정하며 PDF 성적서를 생성합니다.</p>
-        <div class="tech-stack">
-          <span class="tech-chip">Canvas 2D</span>
-          <span class="tech-chip">Scale Calibration</span>
-          <span class="tech-chip">jsPDF</span>
-          <span class="tech-chip">html2canvas</span>
-        </div>
-        <div class="card-actions">
-          <a href="./imagemeasure/" class="btn btn-primary">앱 실행하기</a>
-          <a href="https://imagemeasure.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">Scale Calibration</span>
+            <span class="tech-chip">jsPDF</span>
+            <span class="tech-chip">html2canvas</span>
+          </div>
+          <div class="card-actions">
+            <a href="./imagemeasure/" class="btn btn-primary">앱 실행</a>
+            <a href="https://imagemeasure.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+          </div>
         </div>
       </div>
 
       <!-- 3. fms-measure-anomaly -->
       <div class="card" style="--card-highlight: #f59e0b;">
-        <div class="card-header">
-          <div class="icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚙️</div>
-          <div class="card-title-wrap">
-            <h2>FMS 데이터 분석 & 이상 탐지</h2>
-            <span class="tag">fms-measure-anomaly</span>
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚙️</div>
+            <div class="card-title-wrap">
+              <h2>FMS 데이터 분석 & 이상 탐지</h2>
+              <span class="tag">fms-measure-anomaly</span>
+            </div>
           </div>
+          <p class="card-desc">설비 측정 데이터(CSV/Excel)의 SPC 통계 공정관리(Cp, Cpk, 관리한계선), 시계열 이상 탐지 및 파레토 분석을 수행합니다.</p>
         </div>
-        <p class="card-desc">FMS 설비 측정 데이터(CSV/Excel)의 SPC 통계 공정 관리(Cp, Cpk, UCL/LCL), 시계열 불량 이상 징후 감지 및 파레토 분석을 수행합니다.</p>
-        <div class="tech-stack">
-          <span class="tech-chip">Apache ECharts</span>
-          <span class="tech-chip">PapaParse</span>
-          <span class="tech-chip">SheetJS</span>
-          <span class="tech-chip">SPC Cpk</span>
-        </div>
-        <div class="card-actions">
-          <a href="./fms-measure-anomaly/" class="btn btn-primary">앱 실행하기</a>
-          <a href="https://measure.schjschj.workers.dev/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">Apache ECharts</span>
+            <span class="tech-chip">SPC Cpk</span>
+            <span class="tech-chip">PapaParse</span>
+          </div>
+          <div class="card-actions">
+            <a href="./fms-measure-anomaly/" class="btn btn-primary">앱 실행</a>
+            <a href="https://measure.schjschj.workers.dev/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+          </div>
         </div>
       </div>
 
       <!-- 4. lottracking -->
       <div class="card" style="--card-highlight: #8b5cf6;">
-        <div class="card-header">
-          <div class="icon-box" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">🔍</div>
-          <div class="card-title-wrap">
-            <h2>로트추적 분석기 (미주 FMS)</h2>
-            <span class="tag">lottracking</span>
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(139, 92, 246, 0.15); color: #a78bfa;">🔍</div>
+            <div class="card-title-wrap">
+              <h2>로트추적 분석기 (미주 FMS)</h2>
+              <span class="tag">lottracking</span>
+            </div>
           </div>
+          <p class="card-desc">생산 공정 전주기(원소재~가공~검사) Lot 계보를 역추적하여 불량 발생 시 설비/공정 상관관계를 분석하고 서식 엑셀로 내보냅니다.</p>
         </div>
-        <p class="card-desc">생산 공정 전주기(원소재~가공~검사) Lot 번호를 상호 매핑하여 불량 발생 시 설비/공정/전후 Lot 상관관계를 역추적하고 엑셀로 출력합니다.</p>
-        <div class="tech-stack">
-          <span class="tech-chip">ExcelJS</span>
-          <span class="tech-chip">FileSaver</span>
-          <span class="tech-chip">Genealogy Tracking</span>
-          <span class="tech-chip">In-Memory Index</span>
-        </div>
-        <div class="card-actions">
-          <a href="./lottracking/" class="btn btn-primary">앱 실행하기</a>
-          <a href="https://lottracking.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">ExcelJS</span>
+            <span class="tech-chip">Genealogy</span>
+            <span class="tech-chip">In-Memory Index</span>
+          </div>
+          <div class="card-actions">
+            <a href="./lottracking/" class="btn btn-primary">앱 실행</a>
+            <a href="https://lottracking.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+          </div>
         </div>
       </div>
 
       <!-- 5. vision-inspection-dashboard -->
       <div class="card" style="--card-highlight: #ec4899;">
-        <div class="card-header">
-          <div class="icon-box" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">👁️</div>
-          <div class="card-title-wrap">
-            <h2>비전 방식별 비교 대시보드</h2>
-            <span class="tag">vision-inspection-dashboard</span>
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">👁️</div>
+            <div class="card-title-wrap">
+              <h2>비전 방식별 비교 대시보드</h2>
+              <span class="tag">vision-inspection-dashboard</span>
+            </div>
+          </div>
+          <p class="card-desc">머신비전 4대 기술(2D, 2.5D, 3D, AI)의 검출력, 택트타임, 조명 민감도, 투자비를 레이더 차트로 비교하고 ROI를 시뮬레이션합니다.</p>
+        </div>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">Chart.js</span>
+            <span class="tech-chip">Radar Matrix</span>
+            <span class="tech-chip">ROI Simulator</span>
+          </div>
+          <div class="card-actions">
+            <a href="./vision-inspection-dashboard/" class="btn btn-primary">앱 실행</a>
+            <a href="https://magical-narwhal-ae37fe.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
           </div>
         </div>
-        <p class="card-desc">머신비전 4대 검사 기술(2D, 2.5D, 3D, AI)의 검출력, 택트타임, 조명 민감도, 구축 비용을 레이더 차트로 비교하고 ROI를 시뮬레이션합니다.</p>
-        <div class="tech-stack">
-          <span class="tech-chip">Chart.js</span>
-          <span class="tech-chip">Radar Chart</span>
-          <span class="tech-chip">ROI Simulator</span>
-          <span class="tech-chip">Defect Matrix</span>
+      </div>
+
+      <!-- 6. sftc-overtime -->
+      <div class="card" style="--card-highlight: #06b6d4;">
+        <div class="card-top">
+          <div class="card-header">
+            <div class="icon-box" style="background: rgba(6, 182, 212, 0.15); color: #22d3ee;">⏱️</div>
+            <div class="card-title-wrap">
+              <h2>SFTC 연장근무 자동등록</h2>
+              <span class="tag">sftc-overtime</span>
+            </div>
+          </div>
+          <p class="card-desc">그룹웨어 연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 SSE 터미널 로그 모니터링을 지원합니다.</p>
         </div>
-        <div class="card-actions">
-          <a href="./vision-inspection-dashboard/" class="btn btn-primary">앱 실행하기</a>
-          <a href="https://magical-narwhal-ae37fe.netlify.app/" target="_blank" class="btn btn-secondary">원문 데모 ↗</a>
+        <div class="card-bottom">
+          <div class="tech-stack">
+            <span class="tech-chip">SSE Streaming</span>
+            <span class="tech-chip">Cron Schedule</span>
+            <span class="tech-chip">Auto Registration</span>
+          </div>
+          <div class="card-actions">
+            <a href="./sftc-overtime/" class="btn btn-primary">UI 열기</a>
+            <a href="https://meters-gui-dependence-confidentiality.trycloudflare.com/" target="_blank" class="btn btn-secondary">라이브 터널 ↗</a>
+          </div>
         </div>
       </div>
     </div>
 
     <footer>
-      <p>개발자: <strong>schjschj</strong> | <a href="https://github.com/schjschj" target="_blank">GitHub 프로필 바로가기</a></p>
+      <p><strong>SANG-A Quality Tool</strong> | 개발자: <strong>schjschj</strong> | <a href="https://github.com/schjschj/smart-manufacturing-tools" target="_blank">GitHub 저장소 바로가기</a></p>
     </footer>
   </div>
 </body>
