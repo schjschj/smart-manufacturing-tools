@@ -1,5 +1,15 @@
 'use strict';
 
+const LIVE_TUNNEL_URL = 'https://frederick-maternity-plates-coaching.trycloudflare.com';
+
+function getApiBaseUrl() {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') return '';
+  if (host.includes('trycloudflare.com')) return '';
+  // When running on GitHub Pages (schjschj.github.io)
+  return LIVE_TUNNEL_URL;
+}
+
 const DEFAULT_ACCOUNTS = [
   {
     "id": "acc_1_31796",
@@ -160,29 +170,46 @@ function initTabs() {
 // 2. 이벤트 리스너 등록
 function initEventListeners() {
   // 즉시 실행 버튼들
-  document.getElementById('btnDryRunAll').addEventListener('click', () => triggerRun({ dryRun: true }));
-  document.getElementById('btnRunLive').addEventListener('click', () => {
-    if (confirm('오늘자 연장근무를 실제로 사이트에 등록하시겠습니까?\n(등록된 인원은 즉시 최종 제출됩니다.)')) {
-      triggerRun({ dryRun: false });
-    }
-  });
+  const btnDryRun = document.getElementById('btnDryRunAll');
+  if (btnDryRun) btnDryRun.addEventListener('click', () => triggerRun({ dryRun: true }));
+
+  const btnRunLive = document.getElementById('btnRunLive');
+  if (btnRunLive) {
+    btnRunLive.addEventListener('click', () => {
+      if (confirm('오늘자 연장근무를 실제로 사이트에 등록하시겠습니까?\n(신청 활성화된 인원은 즉시 최종 제출됩니다.)')) {
+        triggerRun({ dryRun: false });
+      }
+    });
+  }
 
   // 콘솔 지우기
-  document.getElementById('btnClearLogs').addEventListener('click', () => {
-    document.getElementById('terminalOutput').innerHTML = '';
-  });
+  const btnClearLogs = document.getElementById('btnClearLogs');
+  if (btnClearLogs) {
+    btnClearLogs.addEventListener('click', () => {
+      document.getElementById('terminalOutput').innerHTML = '';
+    });
+  }
 
   // 계정 관리 버튼들
-  document.getElementById('btnAddAccount').addEventListener('click', addAccountRow);
-  document.getElementById('btnSaveAccounts').addEventListener('click', saveAccounts);
+  const btnAddAccount = document.getElementById('btnAddAccount');
+  if (btnAddAccount) btnAddAccount.addEventListener('click', addAccountRow);
+
+  const btnSaveAccounts = document.getElementById('btnSaveAccounts');
+  if (btnSaveAccounts) btnSaveAccounts.addEventListener('click', saveAccounts);
 
   // 사유 모달
-  document.getElementById('btnModalClose').addEventListener('click', closeReasonModal);
-  document.getElementById('btnModalCancel').addEventListener('click', closeReasonModal);
-  document.getElementById('btnModalApply').addEventListener('click', applyReasonModal);
+  const btnModalClose = document.getElementById('btnModalClose');
+  if (btnModalClose) btnModalClose.addEventListener('click', closeReasonModal);
+
+  const btnModalCancel = document.getElementById('btnModalCancel');
+  if (btnModalCancel) btnModalCancel.addEventListener('click', closeReasonModal);
+
+  const btnModalApply = document.getElementById('btnModalApply');
+  if (btnModalApply) btnModalApply.addEventListener('click', applyReasonModal);
 
   // 스케줄 설정 폼
-  document.getElementById('settingsForm').addEventListener('submit', handleSettingsSubmit);
+  const settingsForm = document.getElementById('settingsForm');
+  if (settingsForm) settingsForm.addEventListener('submit', handleSettingsSubmit);
 }
 
 // 3. SSE 실시간 스트림 연결
@@ -192,7 +219,8 @@ function initSSE() {
   }
 
   try {
-    eventSource = new EventSource('/api/run/events');
+    const sseUrl = getApiBaseUrl() + '/api/run/events';
+    eventSource = new EventSource(sseUrl);
 
     eventSource.onmessage = (event) => {
       try {
@@ -204,10 +232,10 @@ function initSSE() {
     };
 
     eventSource.onerror = () => {
-      // 정적 호스팅 등에서는 연결 불가할 수 있으므로 조용히 무시
+      // 자동 재연결 대기
     };
   } catch (e) {
-    // EventSource 미지원 환경 대응
+    // SSE 미지원 환경
   }
 }
 
@@ -217,18 +245,18 @@ function handleSSEMessage(payload) {
 
   if (payload.type === 'status') {
     if (payload.data.running) {
-      runnerBadge.classList.remove('hidden');
-      runnerBadgeText.textContent = `자동화 실행 중 (${payload.data.currentRunId || ''})`;
+      if (runnerBadge) runnerBadge.classList.remove('hidden');
+      if (runnerBadgeText) runnerBadgeText.textContent = `자동화 실행 중 (${payload.data.currentRunId || ''})`;
     } else {
-      runnerBadge.classList.add('hidden');
+      if (runnerBadge) runnerBadge.classList.add('hidden');
     }
   } else if (payload.type === 'log') {
     appendTerminalLog(payload.data);
   } else if (payload.type === 'progress') {
-    runnerBadge.classList.remove('hidden');
-    runnerBadgeText.textContent = `${payload.data.account} 처리 중... (시도 ${payload.data.attempt})`;
+    if (runnerBadge) runnerBadge.classList.remove('hidden');
+    if (runnerBadgeText) runnerBadgeText.textContent = `${payload.data.account} 처리 중... (시도 ${payload.data.attempt})`;
   } else if (payload.type === 'finished') {
-    runnerBadge.classList.add('hidden');
+    if (runnerBadge) runnerBadge.classList.add('hidden');
     appendTerminalLog({
       level: 'success',
       event: '작업 완료',
@@ -241,6 +269,8 @@ function handleSSEMessage(payload) {
 
 function appendTerminalLog(entry) {
   const terminal = document.getElementById('terminalOutput');
+  if (!terminal) return;
+
   const div = document.createElement('div');
   div.className = `log-line ${entry.level || 'info'}`;
 
@@ -263,7 +293,7 @@ function appendTerminalLog(entry) {
 // 4. 상태 및 최근 실행 결과 로드
 async function loadStatus() {
   try {
-    const res = await fetch('/api/status');
+    const res = await fetch(getApiBaseUrl() + '/api/status');
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
@@ -354,7 +384,7 @@ function renderLastRun(lastRun) {
 // 5. 실행 트리거 API 호출
 async function triggerRun(params) {
   try {
-    const res = await fetch('/api/run', {
+    const res = await fetch(getApiBaseUrl() + '/api/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -370,23 +400,20 @@ async function triggerRun(params) {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
-    if (window.location.hostname.includes('github.io')) {
-      alert('⚠️ 현재 접속 중인 곳은 GitHub Pages 정적 웹 뷰어입니다.\n\n실제 자동화 및 진단 실행은 사내 백엔드 서버(http://localhost:3000)에서 구동됩니다.\n상단 배너의 [사내 로컬 서버 바로가기]를 이용해 주세요.');
-    } else {
-      alert(`오류 발생: ${err.message}`);
-    }
+    alert(`오류 발생: ${err.message}`);
   }
 }
 
-// 6. 계정 관리
+// 6. 계정 관리 및 팀원 원클릭 카드 연동
 async function loadAccounts() {
   try {
-    const res = await fetch('/api/accounts');
+    const res = await fetch(getApiBaseUrl() + '/api/accounts');
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
         currentAccounts = data.accounts;
-        renderAccountsTable();
+        localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
+        renderAllAccountViews();
         return;
       }
     }
@@ -401,7 +428,7 @@ async function loadAccounts() {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         currentAccounts = parsed;
-        renderAccountsTable();
+        renderAllAccountViews();
         return;
       }
     } catch (e) {
@@ -411,9 +438,124 @@ async function loadAccounts() {
 
   // Fallback 2: DEFAULT_ACCOUNTS
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+  renderAllAccountViews();
+}
+
+function renderAllAccountViews() {
+  renderMemberCards();
   renderAccountsTable();
 }
 
+// [핵심] 팀원별 당일 연장근무 신청/취소 간편 카드 렌더링
+function renderMemberCards() {
+  const grid = document.getElementById('memberCardsGrid');
+  if (!grid) return;
+
+  if (!currentAccounts || currentAccounts.length === 0) {
+    grid.innerHTML = '<div style="color: var(--gray-500); grid-column: 1/-1; text-align: center; padding: 20px;">등록된 팀원이 없습니다.</div>';
+    return;
+  }
+
+  grid.innerHTML = currentAccounts.map((acc, index) => {
+    const isEnabled = acc.enabled !== false;
+    const reasonsList = Array.isArray(acc.reasons) && acc.reasons.length > 0
+      ? acc.reasons
+      : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
+    const currentReason = reasonsList[0] || '양산품 측정';
+
+    const optionsHtml = reasonsList.map(r => 
+      `<option value="${escapeHtml(r)}" ${r === currentReason ? 'selected' : ''}>${escapeHtml(r)}</option>`
+    ).join('');
+
+    const empHint = acc.employeeId ? '***' + String(acc.employeeId).slice(-2) : '-';
+
+    return `
+      <div class="member-quick-card ${isEnabled ? 'active' : 'inactive'}">
+        <div class="member-card-header">
+          <div>
+            <div class="member-card-name">${escapeHtml(acc.displayName || '이름 없음')}</div>
+            <div class="member-card-empno">사번: ${escapeHtml(empHint)}</div>
+          </div>
+          <span class="member-card-pill ${isEnabled ? 'active' : 'inactive'}">
+            ${isEnabled ? '🟢 오늘 신청 대기' : '⚪ 오늘 신청 취소'}
+          </span>
+        </div>
+
+        <div class="member-card-reason-box">
+          <label>오늘 사유:</label>
+          <select class="member-card-select" onchange="updateMemberReason(${index}, this.value)">
+            ${optionsHtml}
+          </select>
+        </div>
+
+        <button type="button" class="btn-member-toggle ${isEnabled ? 'btn-cancel' : 'btn-apply'}" onclick="toggleMemberAttendance(${index}, ${!isEnabled})">
+          ${isEnabled ? '✕ 오늘 신청 취소하기' : '✓ 오늘 연장근무 신청'}
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+window.toggleMemberAttendance = async (index, newEnabledState) => {
+  const acc = currentAccounts[index];
+  if (!acc) return;
+
+  acc.enabled = newEnabledState;
+  renderAllAccountViews();
+
+  // 토스트 메시지 알림
+  const toast = document.getElementById('quickStatusToast');
+  if (toast) {
+    toast.textContent = `✓ [${acc.displayName}]님 오늘 연장근무가 ${newEnabledState ? '신청' : '취소'}되었습니다.`;
+    toast.style.display = 'block';
+    setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+  }
+
+  await saveAccountsSilent();
+};
+
+window.updateMemberReason = async (index, selectedReason) => {
+  const acc = currentAccounts[index];
+  if (!acc) return;
+
+  if (Array.isArray(acc.reasons)) {
+    const list = acc.reasons.filter(r => r !== selectedReason);
+    list.unshift(selectedReason);
+    acc.reasons = list;
+  }
+
+  const toast = document.getElementById('quickStatusToast');
+  if (toast) {
+    toast.textContent = `✓ [${acc.displayName}]님 근태 사유가 '${selectedReason}'(으)로 변경되었습니다.`;
+    toast.style.display = 'block';
+    setTimeout(() => { if (toast) toast.style.display = 'none'; }, 2500);
+  }
+
+  await saveAccountsSilent();
+};
+
+async function saveAccountsSilent() {
+  localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
+
+  try {
+    const res = await fetch(getApiBaseUrl() + '/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accounts: currentAccounts }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && Array.isArray(data.accounts)) {
+        currentAccounts = data.accounts;
+        renderAllAccountViews();
+      }
+    }
+  } catch (err) {
+    console.warn('서버 실시간 동기화 오류 (로컬 저장 유지됨):', err);
+  }
+}
+
+// 7. 계정 관리 테이블 (상세 모달용)
 function renderAccountsTable() {
   const tbody = document.getElementById('accountsTableBody');
   const countBadge = document.getElementById('accountCountBadge');
@@ -466,6 +608,7 @@ window.updateAccountField = (index, field, value) => {
     if (field === 'password' && value) {
       currentAccounts[index].hasPassword = true;
     }
+    renderMemberCards();
   }
 };
 
@@ -479,7 +622,7 @@ function addAccountRow() {
     enabled: true,
     reasons: ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'],
   });
-  renderAccountsTable();
+  renderAllAccountViews();
 }
 
 window.deleteAccount = (index) => {
@@ -487,7 +630,7 @@ window.deleteAccount = (index) => {
   const name = acc.displayName || `${index + 1}번째 인원`;
   if (confirm(`'${name}' 계정을 삭제하시겠습니까?`)) {
     currentAccounts.splice(index, 1);
-    renderAccountsTable();
+    renderAllAccountViews();
   }
 };
 
@@ -496,7 +639,6 @@ window.dryRunAccount = (accountId) => {
 };
 
 async function saveAccounts() {
-  // Sync values from table DOM just in case
   const rows = document.querySelectorAll('#accountsTableBody tr');
   rows.forEach((tr, index) => {
     if (currentAccounts[index]) {
@@ -516,7 +658,7 @@ async function saveAccounts() {
 
   let serverSaved = false;
   try {
-    const res = await fetch('/api/accounts', {
+    const res = await fetch(getApiBaseUrl() + '/api/accounts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ accounts: currentAccounts }),
@@ -529,21 +671,20 @@ async function saveAccounts() {
       }
     }
   } catch (err) {
-    console.warn('API /api/accounts 저장 불가 (로컬 저장소에 영구 보존됩니다):', err);
+    console.warn('API 저장 오류:', err);
   }
 
-  // Always save to localStorage
   localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
-  renderAccountsTable();
+  renderAllAccountViews();
 
   if (serverSaved) {
-    alert('팀원 계정 설정이 서버와 브라우저에 성공적으로 저장되었습니다.');
+    alert('팀원 계정 설정이 서버와 웹 브라우저에 성공적으로 영구 저장되었습니다.');
   } else {
-    alert('팀원 계정 설정이 성공적으로 저장되었습니다!\n(브라우저 저장소에 영구 보존되어 새로고침 후에도 유지됩니다.)');
+    alert('팀원 계정 설정이 성공적으로 저장되었습니다!\n(브라우저 저장소에 영구 보존됩니다.)');
   }
 }
 
-// 7. 사유 편집 모달
+// 8. 사유 편집 모달
 window.openReasonModal = (index) => {
   editingAccountIndex = index;
   const acc = currentAccounts[index];
@@ -566,14 +707,15 @@ function applyReasonModal() {
     .filter((r) => r.length > 0);
 
   currentAccounts[editingAccountIndex].reasons = reasons.length > 0 ? reasons : ['양산품 측정'];
-  renderAccountsTable();
+  renderAllAccountViews();
   closeReasonModal();
+  saveAccountsSilent();
 }
 
-// 8. 스케줄 설정 관리
+// 9. 스케줄 설정 관리
 async function loadSettings() {
   try {
-    const res = await fetch('/api/settings');
+    const res = await fetch(getApiBaseUrl() + '/api/settings');
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
@@ -583,7 +725,7 @@ async function loadSettings() {
       }
     }
   } catch (err) {
-    console.warn('설정 API 로드 불가, 기본값 또는 로컬 설정을 적용합니다.');
+    console.warn('설정 API 로드 불가, 기본값을 적용합니다.');
   }
 
   const saved = localStorage.getItem('sftc_settings');
@@ -619,7 +761,7 @@ async function handleSettingsSubmit(e) {
 
   let serverSaved = false;
   try {
-    const res = await fetch('/api/settings', {
+    const res = await fetch(getApiBaseUrl() + '/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -644,13 +786,13 @@ async function handleSettingsSubmit(e) {
   }
 }
 
-// 9. 로그 기록 조회
+// 10. 로그 기록 조회
 async function loadLogsList() {
   const listElem = document.getElementById('logsList');
   if (!listElem) return;
 
   try {
-    const res = await fetch('/api/logs');
+    const res = await fetch(getApiBaseUrl() + '/api/logs');
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.logs) && data.logs.length > 0) {
@@ -667,7 +809,6 @@ async function loadLogsList() {
     }
   } catch (err) {}
 
-  // Fallback demo log
   listElem.innerHTML = `
     <li>
       <button class="log-item-btn active" onclick="viewLogDetail('20260916-2026-09-16T08-01-24-799Z.jsonl', this)">

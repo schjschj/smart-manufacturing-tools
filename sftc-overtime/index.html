@@ -17,8 +17,8 @@
         <span style="font-size: 1.2rem;">💡</span>
         <span><strong>팀원 계정 연동 안내:</strong> 팀원 5명의 계정 정보(사번, 비밀번호 마스킹, 사유 9종)가 로드되었습니다. 수정 사항은 웹 브라우저(localStorage)에 안전하게 저장됩니다.</span>
       </div>
-      <a href="http://localhost:3000" target="_blank" style="padding: 6px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; white-space: nowrap; margin-left: 12px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
-        사내 로컬 서버 (3000) 바로가기 ↗
+      <a href="https://frederick-maternity-plates-coaching.trycloudflare.com/" target="_blank" style="padding: 6px 16px; background: #2563eb; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 0.82rem; white-space: nowrap; margin-left: 12px; box-shadow: 0 2px 8px rgba(37,99,235,0.4);">
+        실시간 공용 웹 바로가기 ↗
       </a>
     </div>
 
@@ -67,6 +67,26 @@
       <!-- 1. 대시보드 탭 -->
       <section id="tab-dashboard" class="tab-pane active">
         <!-- 요약 카드 -->
+                <!-- 팀원별 당일 연장근무 신청/취소 원클릭 카드 -->
+        <div class="card member-toggle-card" style="border: 2px solid #3b82f6; background: #ffffff;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray-200); padding-bottom: 12px; margin-bottom: 14px;">
+            <div>
+              <h3 style="display: flex; align-items: center; gap: 8px; font-size: 18px; color: #1e3a8a;">
+                <span>👥</span> 오늘의 팀원 연장근무 등록 / 취소 원클릭
+              </h3>
+              <p class="desc">
+                팀원 개개인이 접속하여 본인 카드의 <strong>[신청]</strong> 또는 <strong>[취소]</strong> 버튼을 누르면 즉시 실시간 저장됩니다. (매일 16:00 정기 예약 시 <strong>'오늘 신청 대기'</strong> 인원만 자동 제출)
+              </p>
+            </div>
+            <div id="quickStatusToast" style="display: none; padding: 6px 14px; background: #ecfdf5; border: 1px solid #10b981; color: #065f46; border-radius: 6px; font-size: 13px; font-weight: 600;">
+              ✓ 실시간 반영 완료
+            </div>
+          </div>
+          <div class="member-quick-grid" id="memberCardsGrid">
+            <!-- JS 동적 렌더링 -->
+          </div>
+        </div>
+
         <div class="summary-cards">
           <div class="card stat-card success">
             <div class="stat-title">등록 성공</div>
