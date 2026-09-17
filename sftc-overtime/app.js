@@ -1,12 +1,11 @@
 'use strict';
 
-const LIVE_TUNNEL_URL = 'https://frederick-maternity-plates-coaching.trycloudflare.com';
+const LIVE_TUNNEL_URL = 'https://dare-existed-tradition-soa.trycloudflare.com';
 
 function getApiBaseUrl() {
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') return '';
   if (host.includes('trycloudflare.com')) return '';
-  // When running on GitHub Pages (schjschj.github.io)
   return LIVE_TUNNEL_URL;
 }
 
@@ -17,12 +16,13 @@ const DEFAULT_ACCOUNTS = [
     "employeeId": "31796",
     "enabled": true,
     "hasPassword": true,
+    "todayReason": "출하검사",
     "reasons": [
+      "출하검사",
       "양산품 측정",
       "개발품 측정업무",
       "수입검사",
       "공정검사",
-      "출하검사",
       "제품 선별",
       "고객사 자료 작성",
       "고객사 긴급 대응",
@@ -35,9 +35,10 @@ const DEFAULT_ACCOUNTS = [
     "employeeId": "31906",
     "enabled": true,
     "hasPassword": true,
+    "todayReason": "개발품 측정업무",
     "reasons": [
-      "양산품 측정",
       "개발품 측정업무",
+      "양산품 측정",
       "수입검사",
       "공정검사",
       "출하검사",
@@ -53,14 +54,15 @@ const DEFAULT_ACCOUNTS = [
     "employeeId": "30443",
     "enabled": true,
     "hasPassword": true,
+    "todayReason": "고객사 자료 작성",
     "reasons": [
+      "고객사 자료 작성",
       "양산품 측정",
       "개발품 측정업무",
       "수입검사",
       "공정검사",
       "출하검사",
       "제품 선별",
-      "고객사 자료 작성",
       "고객사 긴급 대응",
       "표준문서 작성"
     ]
@@ -71,7 +73,9 @@ const DEFAULT_ACCOUNTS = [
     "employeeId": "31957",
     "enabled": true,
     "hasPassword": true,
+    "todayReason": "표준문서 작성",
     "reasons": [
+      "표준문서 작성",
       "양산품 측정",
       "개발품 측정업무",
       "수입검사",
@@ -79,8 +83,7 @@ const DEFAULT_ACCOUNTS = [
       "출하검사",
       "제품 선별",
       "고객사 자료 작성",
-      "고객사 긴급 대응",
-      "표준문서 작성"
+      "고객사 긴급 대응"
     ]
   },
   {
@@ -89,6 +92,7 @@ const DEFAULT_ACCOUNTS = [
     "employeeId": "31843",
     "enabled": true,
     "hasPassword": true,
+    "todayReason": "양산품 측정",
     "reasons": [
       "양산품 측정",
       "개발품 측정업무",
@@ -124,9 +128,9 @@ const DEFAULT_STATUS = {
     counts: { success: 5, skipped: 0, failed: 0, "dry-run": 0 },
     results: [
       { displayName: "송충종", employeeIdHint: "***96", attempt: 1, status: "success", code: "REGISTERED", reason: "출하검사", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "곽재혁", employeeIdHint: "***06", attempt: 1, status: "success", code: "REGISTERED", reason: "개발검사", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "이상환", employeeIdHint: "***43", attempt: 1, status: "success", code: "REGISTERED", reason: "고객 자료 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "서종목", employeeIdHint: "***57", attempt: 1, status: "success", code: "REGISTERED", reason: "표준 자료 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
+      { displayName: "곽재혁", employeeIdHint: "***06", attempt: 1, status: "success", code: "REGISTERED", reason: "개발품 측정업무", message: "연장근무 일괄 등록 확인 완료했습니다." },
+      { displayName: "이상환", employeeIdHint: "***43", attempt: 1, status: "success", code: "REGISTERED", reason: "고객사 자료 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
+      { displayName: "서종목", employeeIdHint: "***57", attempt: 1, status: "success", code: "REGISTERED", reason: "표준문서 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
       { displayName: "이제현", employeeIdHint: "***43", attempt: 1, status: "success", code: "REGISTERED", reason: "양산품 측정", message: "연장근무 일괄 등록 확인 완료했습니다." }
     ],
     logFile: "20260916-2026-09-16T08-01-24-799Z.jsonl"
@@ -136,6 +140,15 @@ const DEFAULT_STATUS = {
 let currentAccounts = [];
 let editingAccountIndex = null;
 let eventSource = null;
+
+// 랜덤 사유 추출 유틸리티
+function getRandomReason(reasons, currentReason) {
+  if (!Array.isArray(reasons) || reasons.length === 0) return '양산품 측정';
+  if (reasons.length === 1) return reasons[0];
+  const pool = currentReason ? reasons.filter(r => r !== currentReason) : reasons;
+  const list = pool.length > 0 ? pool : reasons;
+  return list[Math.floor(Math.random() * list.length)];
+}
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
@@ -169,7 +182,6 @@ function initTabs() {
 
 // 2. 이벤트 리스너 등록
 function initEventListeners() {
-  // 즉시 실행 버튼들
   const btnDryRun = document.getElementById('btnDryRunAll');
   if (btnDryRun) btnDryRun.addEventListener('click', () => triggerRun({ dryRun: true }));
 
@@ -182,7 +194,6 @@ function initEventListeners() {
     });
   }
 
-  // 콘솔 지우기
   const btnClearLogs = document.getElementById('btnClearLogs');
   if (btnClearLogs) {
     btnClearLogs.addEventListener('click', () => {
@@ -190,14 +201,12 @@ function initEventListeners() {
     });
   }
 
-  // 계정 관리 버튼들
   const btnAddAccount = document.getElementById('btnAddAccount');
   if (btnAddAccount) btnAddAccount.addEventListener('click', addAccountRow);
 
   const btnSaveAccounts = document.getElementById('btnSaveAccounts');
   if (btnSaveAccounts) btnSaveAccounts.addEventListener('click', saveAccounts);
 
-  // 사유 모달
   const btnModalClose = document.getElementById('btnModalClose');
   if (btnModalClose) btnModalClose.addEventListener('click', closeReasonModal);
 
@@ -207,7 +216,6 @@ function initEventListeners() {
   const btnModalApply = document.getElementById('btnModalApply');
   if (btnModalApply) btnModalApply.addEventListener('click', applyReasonModal);
 
-  // 스케줄 설정 폼
   const settingsForm = document.getElementById('settingsForm');
   if (settingsForm) settingsForm.addEventListener('submit', handleSettingsSubmit);
 }
@@ -231,12 +239,8 @@ function initSSE() {
       }
     };
 
-    eventSource.onerror = () => {
-      // 자동 재연결 대기
-    };
-  } catch (e) {
-    // SSE 미지원 환경
-  }
+    eventSource.onerror = () => {};
+  } catch (e) {}
 }
 
 function handleSSEMessage(payload) {
@@ -305,7 +309,6 @@ async function loadStatus() {
     console.warn('API /api/status 로드 불가, 기본 상태로 표시합니다.');
   }
 
-  // Fallback
   applyStatus(DEFAULT_STATUS);
 }
 
@@ -412,6 +415,7 @@ async function loadAccounts() {
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
         currentAccounts = data.accounts;
+        ensureRandomTodayReasons();
         localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
         renderAllAccountViews();
         return;
@@ -428,6 +432,7 @@ async function loadAccounts() {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         currentAccounts = parsed;
+        ensureRandomTodayReasons();
         renderAllAccountViews();
         return;
       }
@@ -438,7 +443,26 @@ async function loadAccounts() {
 
   // Fallback 2: DEFAULT_ACCOUNTS
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+  ensureRandomTodayReasons();
   renderAllAccountViews();
+}
+
+// 모든 팀원에게 중복되지 않도록 등록 사유 중 랜덤으로 배정
+function ensureRandomTodayReasons() {
+  const used = new Set();
+  currentAccounts.forEach((acc) => {
+    if (acc.displayName === '제현') acc.displayName = '이제현';
+    const reasons = Array.isArray(acc.reasons) && acc.reasons.length > 0
+      ? acc.reasons
+      : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
+
+    if (!acc.todayReason || !reasons.includes(acc.todayReason)) {
+      const avail = reasons.filter((r) => !used.has(r));
+      const chosen = avail.length > 0 ? getRandomReason(avail) : getRandomReason(reasons);
+      acc.todayReason = chosen;
+    }
+    used.add(acc.todayReason);
+  });
 }
 
 function renderAllAccountViews() {
@@ -461,7 +485,11 @@ function renderMemberCards() {
     const reasonsList = Array.isArray(acc.reasons) && acc.reasons.length > 0
       ? acc.reasons
       : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
-    const currentReason = reasonsList[0] || '양산품 측정';
+
+    if (!acc.todayReason || !reasonsList.includes(acc.todayReason)) {
+      acc.todayReason = getRandomReason(reasonsList);
+    }
+    const currentReason = acc.todayReason;
 
     const optionsHtml = reasonsList.map(r => 
       `<option value="${escapeHtml(r)}" ${r === currentReason ? 'selected' : ''}>${escapeHtml(r)}</option>`
@@ -482,7 +510,12 @@ function renderMemberCards() {
         </div>
 
         <div class="member-card-reason-box">
-          <label>오늘 사유:</label>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 12px; color: var(--gray-600); font-weight: 500; margin: 0;">오늘 사유:</label>
+            <button type="button" class="btn-reroll-reason" onclick="rerollMemberReason(${index})" title="등록 사유 중 랜덤 재선택" style="font-size: 11px; color: var(--primary); background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-weight: 600; padding: 0;">
+              <span>🎲</span> 랜덤 변경
+            </button>
+          </div>
           <select class="member-card-select" onchange="updateMemberReason(${index}, this.value)">
             ${optionsHtml}
           </select>
@@ -496,6 +529,40 @@ function renderMemberCards() {
   }).join('');
 }
 
+// 개별 사유 랜덤 재선택
+window.rerollMemberReason = async (index) => {
+  const acc = currentAccounts[index];
+  if (!acc) return;
+  const reasonsList = Array.isArray(acc.reasons) && acc.reasons.length > 0
+    ? acc.reasons
+    : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
+
+  const oldReason = acc.todayReason;
+  acc.todayReason = getRandomReason(reasonsList, oldReason);
+  renderAllAccountViews();
+
+  showToast(`🎲 [${acc.displayName}]님 사유가 '${acc.todayReason}'(으)로 랜덤 변경되었습니다.`);
+  await saveAccountsSilent();
+};
+
+// 전체 팀원 사유 일괄 랜덤 배정
+window.rerollAllMemberReasons = async () => {
+  const used = new Set();
+  currentAccounts.forEach((acc) => {
+    const reasons = Array.isArray(acc.reasons) && acc.reasons.length > 0
+      ? acc.reasons
+      : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
+    const avail = reasons.filter((r) => !used.has(r) && r !== acc.todayReason);
+    const chosen = avail.length > 0 ? getRandomReason(avail) : getRandomReason(reasons, acc.todayReason);
+    acc.todayReason = chosen;
+    used.add(chosen);
+  });
+
+  renderAllAccountViews();
+  showToast('🎲 전체 팀원 5명의 근태 사유가 무작위로 재배정되었습니다.');
+  await saveAccountsSilent();
+};
+
 window.toggleMemberAttendance = async (index, newEnabledState) => {
   const acc = currentAccounts[index];
   if (!acc) return;
@@ -503,14 +570,7 @@ window.toggleMemberAttendance = async (index, newEnabledState) => {
   acc.enabled = newEnabledState;
   renderAllAccountViews();
 
-  // 토스트 메시지 알림
-  const toast = document.getElementById('quickStatusToast');
-  if (toast) {
-    toast.textContent = `✓ [${acc.displayName}]님 오늘 연장근무가 ${newEnabledState ? '신청' : '취소'}되었습니다.`;
-    toast.style.display = 'block';
-    setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
-  }
-
+  showToast(`✓ [${acc.displayName}]님 오늘 연장근무가 ${newEnabledState ? '신청' : '취소'}되었습니다.`);
   await saveAccountsSilent();
 };
 
@@ -518,21 +578,22 @@ window.updateMemberReason = async (index, selectedReason) => {
   const acc = currentAccounts[index];
   if (!acc) return;
 
-  if (Array.isArray(acc.reasons)) {
-    const list = acc.reasons.filter(r => r !== selectedReason);
-    list.unshift(selectedReason);
-    acc.reasons = list;
-  }
+  acc.todayReason = selectedReason;
+  renderAllAccountViews();
 
-  const toast = document.getElementById('quickStatusToast');
-  if (toast) {
-    toast.textContent = `✓ [${acc.displayName}]님 근태 사유가 '${selectedReason}'(으)로 변경되었습니다.`;
-    toast.style.display = 'block';
-    setTimeout(() => { if (toast) toast.style.display = 'none'; }, 2500);
-  }
-
+  showToast(`✓ [${acc.displayName}]님 사유가 '${selectedReason}'(으)로 선택되었습니다.`);
   await saveAccountsSilent();
 };
+
+function showToast(msg) {
+  const toast = document.getElementById('quickStatusToast');
+  if (toast) {
+    toast.textContent = msg;
+    toast.style.display = 'block';
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3000);
+  }
+}
 
 async function saveAccountsSilent() {
   localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
@@ -555,7 +616,7 @@ async function saveAccountsSilent() {
   }
 }
 
-// 7. 계정 관리 테이블 (상세 모달용)
+// 7. 계정 관리 테이블
 function renderAccountsTable() {
   const tbody = document.getElementById('accountsTableBody');
   const countBadge = document.getElementById('accountCountBadge');
@@ -620,6 +681,7 @@ function addAccountRow() {
     password: '',
     hasPassword: false,
     enabled: true,
+    todayReason: '양산품 측정',
     reasons: ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'],
   });
   renderAllAccountViews();
@@ -707,6 +769,9 @@ function applyReasonModal() {
     .filter((r) => r.length > 0);
 
   currentAccounts[editingAccountIndex].reasons = reasons.length > 0 ? reasons : ['양산품 측정'];
+  if (!reasons.includes(currentAccounts[editingAccountIndex].todayReason)) {
+    currentAccounts[editingAccountIndex].todayReason = reasons[0] || '양산품 측정';
+  }
   renderAllAccountViews();
   closeReasonModal();
   saveAccountsSilent();
@@ -837,7 +902,6 @@ window.viewLogDetail = async (logId, btnElem) => {
   }
 };
 
-// 유틸리티
 function escapeHtml(str) {
   return String(str || '')
     .replace(/&/g, '&amp;')
