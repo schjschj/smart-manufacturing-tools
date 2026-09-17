@@ -9,6 +9,23 @@ function getApiBaseUrl() {
   return LIVE_TUNNEL_URL;
 }
 
+function isServerApiConfigured() {
+  const host = window.location.hostname;
+  return Boolean(LIVE_TUNNEL_URL)
+    || window.SFTC_SAME_ORIGIN_API === true
+    || host === 'localhost'
+    || host === '127.0.0.1'
+    || host.includes('trycloudflare.com');
+}
+
+function updateAccountStorageNotice() {
+  const notice = document.getElementById('accountStorageNotice');
+  if (!notice) return;
+  notice.textContent = isServerApiConfigured()
+    ? '💡 성명·활성 상태·사유는 브라우저에도 보존됩니다. 사번과 비밀번호는 연결된 서버의 비밀 저장소에만 저장됩니다.'
+    : '💡 현재는 정적 페이지 모드입니다. 성명·활성 상태·사유는 이 브라우저에 저장되며, 사번과 비밀번호는 보안을 위해 저장되지 않습니다.';
+}
+
 const DEFAULT_ACCOUNTS_LEGACY_DISABLED = [
   {
     "id": "demo_1",
@@ -157,7 +174,13 @@ function saveAccountPreferences(accounts = currentAccounts) {
     todayReason: String(account.todayReason || '').slice(0, 100),
     reasons: Array.isArray(account.reasons) ? account.reasons.map(reason => String(reason).slice(0, 100)).slice(0, 30) : []
   }));
-  localStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(safePreferences));
+  try {
+    localStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(safePreferences));
+    return true;
+  } catch (_) {
+    console.warn('브라우저 계정 설정 저장 불가');
+    return false;
+  }
 }
 
 function applyAccountPreferences(accounts) {
@@ -200,6 +223,7 @@ function getRandomReason(reasons, currentReason) {
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
+  updateAccountStorageNotice();
   initSSE();
   loadStatus();
   loadAccounts();
@@ -275,6 +299,8 @@ function initSSE() {
   if (eventSource) {
     eventSource.close();
   }
+
+  if (!isServerApiConfigured()) return;
 
   try {
     const sseUrl = getApiBaseUrl() + '/api/run/events';
@@ -459,19 +485,21 @@ async function triggerRun(params) {
 
 // 6. 계정 관리 및 팀원 원클릭 카드 연동
 async function loadAccounts() {
-  try {
-    const res = await fetch(getApiBaseUrl() + '/api/accounts');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
-        currentAccounts = applyAccountPreferences(data.accounts);
-        ensureExplicitTodayReasons();
-        renderAllAccountViews();
-        return;
+  if (isServerApiConfigured()) {
+    try {
+      const res = await fetch(getApiBaseUrl() + '/api/accounts');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
+          currentAccounts = applyAccountPreferences(data.accounts);
+          ensureExplicitTodayReasons();
+          renderAllAccountViews();
+          return;
+        }
       }
+    } catch (_) {
+      console.warn('API /api/accounts 호출 불가');
     }
-  } catch (err) {
-    console.warn('API /api/accounts 호출 불가');
   }
 
   // 민감정보는 브라우저 저장소로 폴백하지 않는다.
@@ -625,6 +653,7 @@ function showToast(msg) {
 
 async function saveAccountsSilent() {
   saveAccountPreferences();
+  if (!isServerApiConfigured()) return;
   try {
     const res = await fetch(getApiBaseUrl() + '/api/accounts', {
       method: 'POST',
@@ -745,32 +774,39 @@ async function saveAccounts() {
     }
   });
 
-  saveAccountPreferences();
+  const localSaved = saveAccountPreferences();
 
   let serverSaved = false;
-  try {
-    const res = await fetch(getApiBaseUrl() + '/api/accounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accounts: currentAccounts }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success) {
-        currentAccounts = applyAccountPreferences(data.accounts);
-        serverSaved = true;
+  const serverConfigured = isServerApiConfigured();
+  if (serverConfigured) {
+    try {
+      const res = await fetch(getApiBaseUrl() + '/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accounts: currentAccounts }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          if (Array.isArray(data.accounts)) currentAccounts = applyAccountPreferences(data.accounts);
+          serverSaved = true;
+        }
       }
+    } catch (_) {
+      console.warn('API 저장 오류');
     }
-  } catch (err) {
-    console.warn('API 저장 오류:', err);
   }
 
   renderAllAccountViews();
 
   if (serverSaved) {
     alert('팀원 계정 설정이 서버에 저장되었습니다.');
+  } else if (localSaved && !serverConfigured) {
+    alert('브라우저 설정 저장이 완료되었습니다.\n\n성명·활성 상태·근태 사유는 다시 접속해도 유지됩니다.\n현재 서버가 연결되지 않아 사번과 비밀번호는 보안을 위해 저장하지 않았습니다.');
+  } else if (localSaved) {
+    alert('브라우저 설정은 저장되었습니다.\n\n다만 계정 서버와 동기화되지 않아 사번과 비밀번호는 저장되지 않았습니다. 서버 연결 상태를 확인해 주세요.');
   } else {
-    alert('서버 저장에 실패했습니다. 이름·활성 상태·사유는 이 브라우저에 보존했으며 사번과 비밀번호는 저장하지 않았습니다.');
+    alert('설정을 저장하지 못했습니다. 브라우저 저장 공간과 서버 연결 상태를 확인해 주세요.');
   }
 }
 
