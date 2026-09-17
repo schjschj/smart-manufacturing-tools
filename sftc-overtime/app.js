@@ -138,6 +138,42 @@ const DEFAULT_STATUS = {
 let currentAccounts = [];
 let editingAccountIndex = null;
 let eventSource = null;
+const ACCOUNT_PREFERENCES_KEY = 'sftc_account_preferences_v1';
+
+function loadAccountPreferences() {
+  try {
+    const value = JSON.parse(localStorage.getItem(ACCOUNT_PREFERENCES_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveAccountPreferences(accounts = currentAccounts) {
+  const safePreferences = accounts.map((account, index) => ({
+    id: String(account.id || `index-${index}`),
+    displayName: String(account.displayName || '').slice(0, 50),
+    enabled: account.enabled !== false,
+    todayReason: String(account.todayReason || '').slice(0, 100),
+    reasons: Array.isArray(account.reasons) ? account.reasons.map(reason => String(reason).slice(0, 100)).slice(0, 30) : []
+  }));
+  localStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(safePreferences));
+}
+
+function applyAccountPreferences(accounts) {
+  const preferences = loadAccountPreferences();
+  return accounts.map((account, index) => {
+    const preference = preferences.find(item => item.id === String(account.id || `index-${index}`)) || preferences[index];
+    if (!preference) return account;
+    return {
+      ...account,
+      displayName: preference.displayName || account.displayName,
+      enabled: preference.enabled,
+      todayReason: preference.todayReason || account.todayReason,
+      reasons: preference.reasons?.length ? preference.reasons : account.reasons
+    };
+  });
+}
 
 // 랜덤 사유 추출 유틸리티
 function getRandomReason(reasons, currentReason) {
@@ -415,7 +451,7 @@ async function loadAccounts() {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
-        currentAccounts = data.accounts;
+        currentAccounts = applyAccountPreferences(data.accounts);
         ensureExplicitTodayReasons();
         renderAllAccountViews();
         return;
@@ -427,6 +463,7 @@ async function loadAccounts() {
 
   // 민감정보는 브라우저 저장소로 폴백하지 않는다.
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+  currentAccounts = applyAccountPreferences(currentAccounts);
   ensureExplicitTodayReasons();
   renderAllAccountViews();
 }
@@ -573,6 +610,7 @@ function showToast(msg) {
 }
 
 async function saveAccountsSilent() {
+  saveAccountPreferences();
   try {
     const res = await fetch(getApiBaseUrl() + '/api/accounts', {
       method: 'POST',
@@ -693,6 +731,8 @@ async function saveAccounts() {
     }
   });
 
+  saveAccountPreferences();
+
   let serverSaved = false;
   try {
     const res = await fetch(getApiBaseUrl() + '/api/accounts', {
@@ -703,7 +743,7 @@ async function saveAccounts() {
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
-        currentAccounts = data.accounts;
+        currentAccounts = applyAccountPreferences(data.accounts);
         serverSaved = true;
       }
     }
@@ -716,7 +756,7 @@ async function saveAccounts() {
   if (serverSaved) {
     alert('팀원 계정 설정이 서버에 저장되었습니다.');
   } else {
-    alert('서버 저장에 실패했습니다. 브라우저에는 민감정보를 보관하지 않습니다.');
+    alert('서버 저장에 실패했습니다. 이름·활성 상태·사유는 이 브라우저에 보존했으며 사번과 비밀번호는 저장하지 않았습니다.');
   }
 }
 

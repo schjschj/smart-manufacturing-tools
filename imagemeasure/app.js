@@ -187,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFECT_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
   const STORAGE_KEY = 'NanoMeasure_Calib_State_v1';
   const PRESETS_KEY = 'NanoMeasure_Presets_v1';
+  const SAMPLE_IMAGE_NAME = '250513-스크레치-인위-11_2.png';
+  const SAMPLE_IMAGE_URL = new URL(SAMPLE_IMAGE_NAME, window.location.href).href;
 
   // --- Canvas Sizing Setup ---
   function initCanvasSize() {
@@ -934,16 +936,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (loadSampleBtn) {
     loadSampleBtn.addEventListener('click', () => {
-      const sampleName = "250513-스크레치-인위-11_2.png";
-      const samplePath = encodeURI(sampleName);
-      
-      const existingIdx = uploadedImages.findIndex(i => i.name === sampleName);
+      const existingIdx = uploadedImages.findIndex(i => i.name === SAMPLE_IMAGE_NAME);
       if (existingIdx >= 0) {
         switchActiveImage(existingIdx);
       } else {
         uploadedImages.push({
-          name: sampleName,
-          src: samplePath
+          name: SAMPLE_IMAGE_NAME,
+          src: SAMPLE_IMAGE_URL
         });
         renderImageQueue();
         switchActiveImage(uploadedImages.length - 1);
@@ -2128,11 +2127,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto-load sample image on startup into Queue!
   setTimeout(() => {
-    const sampleName = "250513-스크레치-인위-11_2.png";
-    const samplePath = encodeURI(sampleName);
     uploadedImages.push({
-      name: sampleName,
-      src: samplePath
+      name: SAMPLE_IMAGE_NAME,
+      src: SAMPLE_IMAGE_URL
     });
     renderImageQueue();
     switchActiveImage(0);
