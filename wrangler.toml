@@ -1,0 +1,9 @@
+name = "sang-a-quality-internal"
+main = "edge-auth/worker.js"
+compatibility_date = "2026-09-17"
+
+[vars]
+ORIGIN_HOST = "schjschj.github.io"
+ORIGIN_PATH_PREFIX = "/smart-manufacturing-tools"
+
+# TEAM_PASSWORD와 SESSION_SECRET은 Cloudflare Secret으로만 등록한다.

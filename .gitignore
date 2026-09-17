@@ -11,5 +11,6 @@ desktop.ini
 
 # Node / Scratch
 node_modules/
+.wrangler/
 *.log
 scratch/
