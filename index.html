@@ -400,7 +400,7 @@
       <h1>SANG-A Quality Tool</h1>
       <p class="subtitle">품질 보증, 검사 비전 분석, 설비 공정 이상 탐지, 글로벌 물류 시뮬레이션 및 업무 자동화 통합 엔지니어링 웹 플랫폼</p>
     </header>
-    <div class="test-banner" role="status"><strong>내부 테스트 v0.9.1</strong><span>실데이터는 승인된 업무용 기기에서만 사용하세요.</span><button type="button" class="memo-button" id="openMemoBoard">피드백 메모 <span id="memoCount">0</span></button><a href="/_internal/logout">로그아웃</a></div>
+    <div class="test-banner" role="status"><strong>통합 포털 v1.2.0</strong><span>실데이터는 승인된 업무용 기기에서만 사용하세요.</span><span id="authStatus">접속 방식 확인 중</span><button type="button" class="memo-button" id="openMemoBoard">피드백 메모 <span id="memoCount">0</span></button><a id="logoutLink" href="/_internal/logout" hidden>로그아웃</a></div>
 
     <div class="grid">
       <!-- 1. imagetrans2 -->
@@ -661,9 +661,17 @@
   </div>
 
   <script>
-    const TOOL_VERSION = '0.9.1';
-    const TOOL_UPDATED = '2026-09-17';
     const TOOL_OWNER = '품질팀';
+    const TOOL_META = {
+      imagetrans2: { version: '1.4.0', updated: '2026-06-16' },
+      imagemeasure: { version: '1.3.0', updated: '2026-08-11' },
+      'fms-measure-anomaly': { version: '2.8.0', updated: '2026-05-03' },
+      lottracking: { version: '1.4.0', updated: '2026-03-09' },
+      'vision-inspection-dashboard': { version: '1.2.0', updated: '2026-09-17' },
+      'sftc-overtime': { version: '1.4.0', updated: '2026-07-29' },
+      'retro-inventory-monitor': { version: '1.4.0', updated: '2026-09-04' },
+      'automation-alarm-monitor': { version: '1.3.0', updated: '2026-09-17' }
+    };
     const FEEDBACK_STORAGE_KEY = 'sang_a_tool_feedback_v1';
     let activeFeedbackTool = '전체 포털';
 
@@ -762,11 +770,13 @@
     document.querySelectorAll('a[target="_blank"]').forEach((link) => link.setAttribute('rel', 'noopener noreferrer'));
     document.querySelectorAll('.card').forEach((card) => {
       const title = card.querySelector('h2')?.textContent?.trim() || '도구';
+      const slug = card.querySelector('.tag')?.textContent?.trim() || '';
+      const toolMeta = TOOL_META[slug] || { version: '1.0.0', updated: '2026-09-17' };
       const top = card.querySelector('.card-top');
       if (top) {
         const meta = document.createElement('div');
         meta.className = 'tool-meta';
-        ['내부 테스트', `v${TOOL_VERSION}`, TOOL_UPDATED, `담당 ${TOOL_OWNER}`].forEach((text, index) => {
+        ['내부 테스트', `v${toolMeta.version}`, toolMeta.updated, `담당 ${TOOL_OWNER}`].forEach((text, index) => {
           const chip = document.createElement('span');
           chip.className = `meta-chip${index === 0 ? ' status' : ''}`;
           chip.textContent = text;
@@ -784,6 +794,16 @@
         actions.appendChild(feedback);
       }
     });
+    fetch('/_internal/status', { credentials: 'same-origin', cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('edge auth unavailable')))
+      .then((status) => {
+        document.getElementById('authStatus').textContent = status.authenticated ? '🔒 공통 암호 로그인 · 12시간 세션' : '🔓 로그인 필요';
+        document.getElementById('logoutLink').hidden = !status.authenticated;
+      })
+      .catch(() => {
+        document.getElementById('authStatus').textContent = '⚠ GitHub Pages 공개 원본 접속';
+        document.getElementById('logoutLink').hidden = true;
+      });
     document.getElementById('openMemoBoard').addEventListener('click', () => openFeedbackMemo('전체 포털'));
     document.getElementById('closeMemoModal').addEventListener('click', closeFeedbackMemo);
     document.getElementById('cancelMemo').addEventListener('click', closeFeedbackMemo);

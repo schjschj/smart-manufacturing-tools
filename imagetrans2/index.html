@@ -1312,7 +1312,7 @@
 
       document.getElementById('summaryBox').style.display = 'block';
       document.getElementById('btnStart').disabled = false;
-      const reportBlob = new Blob([JSON.stringify({ appVersion: '0.9.0', generatedAt: new Date().toISOString(), mode, files: conversionReport }, null, 2)], { type: 'application/json' });
+      const reportBlob = new Blob([JSON.stringify({ appVersion: '1.4.0', releaseDate: '2026-06-16', generatedAt: new Date().toISOString(), mode, files: conversionReport }, null, 2)], { type: 'application/json' });
       const reportLink = document.createElement('a');
       reportLink.href = URL.createObjectURL(reportBlob);
       reportLink.download = `image-conversion-report-${Date.now()}.json`;

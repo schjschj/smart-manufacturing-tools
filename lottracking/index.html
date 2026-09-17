@@ -1701,7 +1701,7 @@
         const isPressEnabled = usePressToggle.checked;
         const mode = document.querySelector('input[name="analysis-mode"]:checked').value;
         const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'SANG-A Lot Tracking v0.9.0';
+        workbook.creator = 'SANG-A Lot Tracking v1.4.0 (2026-03-09)';
         workbook.created = new Date();
         workbook.properties.subject = `규칙 ${ruleMetadata.version} / 적용일 ${ruleMetadata.effectiveDate} / ${ruleMetadata.reason}`;
         const sheet = workbook.addWorksheet("로트추적 분석 결과");
