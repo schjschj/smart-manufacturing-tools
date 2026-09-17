@@ -21,9 +21,7 @@ function isServerApiConfigured() {
 function updateAccountStorageNotice() {
   const notice = document.getElementById('accountStorageNotice');
   if (!notice) return;
-  notice.textContent = isServerApiConfigured()
-    ? '💡 성명·활성 상태·사유는 브라우저에도 보존됩니다. 사번과 비밀번호는 연결된 서버의 비밀 저장소에만 저장됩니다.'
-    : '💡 현재는 정적 페이지 모드입니다. 성명·활성 상태·사유는 이 브라우저에 저장되며, 사번과 비밀번호는 보안을 위해 저장되지 않습니다.';
+  notice.textContent = '💾 성명·사번·비밀번호·활성 상태·근태 사유를 이 브라우저에 저장합니다. 공용 PC에서는 사용하지 마세요.';
 }
 
 const DEFAULT_ACCOUNTS_LEGACY_DISABLED = [
@@ -156,26 +154,32 @@ let currentAccounts = [];
 let editingAccountIndex = null;
 let eventSource = null;
 const ACCOUNT_PREFERENCES_KEY = 'sftc_account_preferences_v1';
+const ACCOUNT_STORAGE_KEY = 'sftc_accounts';
 
 function loadAccountPreferences() {
   try {
-    const value = JSON.parse(localStorage.getItem(ACCOUNT_PREFERENCES_KEY) || '[]');
-    return Array.isArray(value) ? value : [];
+    const fullAccounts = JSON.parse(localStorage.getItem(ACCOUNT_STORAGE_KEY) || '[]');
+    if (Array.isArray(fullAccounts) && fullAccounts.length > 0) return fullAccounts;
+    const legacyPreferences = JSON.parse(localStorage.getItem(ACCOUNT_PREFERENCES_KEY) || '[]');
+    return Array.isArray(legacyPreferences) ? legacyPreferences : [];
   } catch (_) {
     return [];
   }
 }
 
 function saveAccountPreferences(accounts = currentAccounts) {
-  const safePreferences = accounts.map((account, index) => ({
+  const storedAccounts = accounts.map((account, index) => ({
     id: String(account.id || `index-${index}`),
     displayName: String(account.displayName || '').slice(0, 50),
+    employeeId: String(account.employeeId || '').slice(0, 30),
+    password: String(account.password || '').slice(0, 200),
+    hasPassword: Boolean(account.password || account.hasPassword),
     enabled: account.enabled !== false,
     todayReason: String(account.todayReason || '').slice(0, 100),
     reasons: Array.isArray(account.reasons) ? account.reasons.map(reason => String(reason).slice(0, 100)).slice(0, 30) : []
   }));
   try {
-    localStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(safePreferences));
+    localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(storedAccounts));
     return true;
   } catch (_) {
     console.warn('브라우저 계정 설정 저장 불가');
@@ -191,6 +195,9 @@ function applyAccountPreferences(accounts) {
     return {
       ...account,
       displayName: preference.displayName || account.displayName,
+      employeeId: Object.hasOwn(preference, 'employeeId') ? preference.employeeId : account.employeeId,
+      password: Object.hasOwn(preference, 'password') ? preference.password : account.password,
+      hasPassword: Boolean(preference.password || preference.hasPassword || account.hasPassword),
       enabled: preference.enabled,
       todayReason: preference.todayReason || account.todayReason,
       reasons: preference.reasons?.length ? preference.reasons : account.reasons
@@ -202,9 +209,9 @@ function accountPreferencesAsFallback() {
   return loadAccountPreferences().map((preference, index) => ({
     id: preference.id || `local-${index}`,
     displayName: preference.displayName || `사용자 ${index + 1}`,
-    employeeId: '',
-    password: '',
-    hasPassword: false,
+    employeeId: preference.employeeId || '',
+    password: preference.password || '',
+    hasPassword: Boolean(preference.password || preference.hasPassword),
     enabled: preference.enabled !== false,
     todayReason: preference.todayReason || '',
     reasons: preference.reasons?.length ? preference.reasons : ['양산품 측정', '개발품 측정업무', '수입검사']
@@ -502,7 +509,7 @@ async function loadAccounts() {
     }
   }
 
-  // 민감정보는 브라우저 저장소로 폴백하지 않는다.
+  // 서버가 없으면 브라우저에 저장된 전체 계정 정보를 복원한다.
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
   if (currentAccounts.length === 0) currentAccounts = accountPreferencesAsFallback();
   currentAccounts = applyAccountPreferences(currentAccounts);
@@ -663,7 +670,8 @@ async function saveAccountsSilent() {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts)) {
-        currentAccounts = data.accounts;
+        currentAccounts = applyAccountPreferences(data.accounts);
+        saveAccountPreferences(currentAccounts);
         renderAllAccountViews();
       }
     }
@@ -800,11 +808,9 @@ async function saveAccounts() {
   renderAllAccountViews();
 
   if (serverSaved) {
-    alert('팀원 계정 설정이 서버에 저장되었습니다.');
-  } else if (localSaved && !serverConfigured) {
-    alert('브라우저 설정 저장이 완료되었습니다.\n\n성명·활성 상태·근태 사유는 다시 접속해도 유지됩니다.\n현재 서버가 연결되지 않아 사번과 비밀번호는 보안을 위해 저장하지 않았습니다.');
+    alert('팀원 계정 설정이 서버와 이 브라우저에 저장되었습니다.');
   } else if (localSaved) {
-    alert('브라우저 설정은 저장되었습니다.\n\n다만 계정 서버와 동기화되지 않아 사번과 비밀번호는 저장되지 않았습니다. 서버 연결 상태를 확인해 주세요.');
+    alert('팀원 계정 설정이 이 브라우저에 저장되었습니다.\n\n성명·사번·비밀번호·활성 상태·근태 사유가 다시 접속해도 유지됩니다.');
   } else {
     alert('설정을 저장하지 못했습니다. 브라우저 저장 공간과 서버 연결 상태를 확인해 주세요.');
   }
