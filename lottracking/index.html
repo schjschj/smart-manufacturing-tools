@@ -674,6 +674,13 @@
                 <input type="file" id="file-input" accept=".csv" multiple>
             </div>
 
+            <div style="margin-top: 10px;">
+                <button type="button" id="load-sample-btn" class="btn btn-secondary" style="width: 100%; padding: 8px 10px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>테스트 샘플 데이터 불러오기 (FMS0819)</span>
+                </button>
+            </div>
+
             <div class="file-list" id="file-list">
                 <!-- Loaded files will appear here -->
             </div>
@@ -984,6 +991,32 @@
             item.appendChild(nameSpan);
             item.appendChild(rightDiv);
             fileListEl.appendChild(item);
+        });
+    }
+
+    // --- Sample Data Loader (FMS0819) ---
+    const loadSampleBtn = document.getElementById("load-sample-btn");
+    if (loadSampleBtn) {
+        loadSampleBtn.addEventListener("click", async () => {
+            const originalContent = loadSampleBtn.innerHTML;
+            loadSampleBtn.disabled = true;
+            loadSampleBtn.innerHTML = `<span>샘플 데이터 로딩 중...</span>`;
+            try {
+                const res = await fetch("./sample-fms0819.csv");
+                if (!res.ok) throw new Error("샘플 CSV 파일을 불러올 수 없습니다 (HTTP " + res.status + ")");
+                const blob = await res.blob();
+                const sampleFile = new File([blob], "FMS0819 (19 0600 ~ 19 1630).csv", { type: "text/csv" });
+                handleFiles([sampleFile]);
+                loadSampleBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> <span>샘플 데이터 로드 완료</span>`;
+                setTimeout(() => {
+                    loadSampleBtn.innerHTML = originalContent;
+                    loadSampleBtn.disabled = false;
+                }, 3000);
+            } catch (err) {
+                alert("샘플 데이터 로드 오류: " + err.message);
+                loadSampleBtn.innerHTML = originalContent;
+                loadSampleBtn.disabled = false;
+            }
         });
     }
 
