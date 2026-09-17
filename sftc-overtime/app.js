@@ -1,6 +1,6 @@
 'use strict';
 
-const LIVE_TUNNEL_URL = 'https://dare-existed-tradition-soa.trycloudflare.com';
+const LIVE_TUNNEL_URL = window.SFTC_API_BASE_URL || '';
 
 function getApiBaseUrl() {
   const host = window.location.hostname;
@@ -9,11 +9,11 @@ function getApiBaseUrl() {
   return LIVE_TUNNEL_URL;
 }
 
-const DEFAULT_ACCOUNTS = [
+const DEFAULT_ACCOUNTS_LEGACY_DISABLED = [
   {
-    "id": "acc_1_31796",
-    "displayName": "송충종",
-    "employeeId": "31796",
+    "id": "demo_1",
+    "displayName": "테스트 사용자 1",
+    "employeeId": "",
     "enabled": true,
     "hasPassword": true,
     "todayReason": "출하검사",
@@ -30,9 +30,9 @@ const DEFAULT_ACCOUNTS = [
     ]
   },
   {
-    "id": "acc_2_31906",
-    "displayName": "곽재혁",
-    "employeeId": "31906",
+    "id": "demo_2",
+    "displayName": "테스트 사용자 2",
+    "employeeId": "",
     "enabled": true,
     "hasPassword": true,
     "todayReason": "개발품 측정업무",
@@ -49,9 +49,9 @@ const DEFAULT_ACCOUNTS = [
     ]
   },
   {
-    "id": "acc_3_30443",
-    "displayName": "이상환",
-    "employeeId": "30443",
+    "id": "demo_3",
+    "displayName": "테스트 사용자 3",
+    "employeeId": "",
     "enabled": true,
     "hasPassword": true,
     "todayReason": "고객사 자료 작성",
@@ -68,9 +68,9 @@ const DEFAULT_ACCOUNTS = [
     ]
   },
   {
-    "id": "acc_4_31957",
-    "displayName": "서종목",
-    "employeeId": "31957",
+    "id": "demo_4",
+    "displayName": "테스트 사용자 4",
+    "employeeId": "",
     "enabled": true,
     "hasPassword": true,
     "todayReason": "표준문서 작성",
@@ -87,9 +87,9 @@ const DEFAULT_ACCOUNTS = [
     ]
   },
   {
-    "id": "acc_5_31843",
-    "displayName": "이제현",
-    "employeeId": "31843",
+    "id": "demo_5",
+    "displayName": "테스트 사용자 5",
+    "employeeId": "",
     "enabled": true,
     "hasPassword": true,
     "todayReason": "양산품 측정",
@@ -106,6 +106,8 @@ const DEFAULT_ACCOUNTS = [
     ]
   }
 ];
+// 실제 계정은 반드시 서버 비밀 저장소/API에서만 불러온다. 공개 정적 소스에는 기본 계정을 두지 않는다.
+const DEFAULT_ACCOUNTS = [];
 
 const DEFAULT_STATUS = {
   success: true,
@@ -127,11 +129,7 @@ const DEFAULT_STATUS = {
     finishedAt: "2026-09-16T08:01:50.096Z",
     counts: { success: 5, skipped: 0, failed: 0, "dry-run": 0 },
     results: [
-      { displayName: "송충종", employeeIdHint: "***96", attempt: 1, status: "success", code: "REGISTERED", reason: "출하검사", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "곽재혁", employeeIdHint: "***06", attempt: 1, status: "success", code: "REGISTERED", reason: "개발품 측정업무", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "이상환", employeeIdHint: "***43", attempt: 1, status: "success", code: "REGISTERED", reason: "고객사 자료 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "서종목", employeeIdHint: "***57", attempt: 1, status: "success", code: "REGISTERED", reason: "표준문서 작성", message: "연장근무 일괄 등록 확인 완료했습니다." },
-      { displayName: "이제현", employeeIdHint: "***43", attempt: 1, status: "success", code: "REGISTERED", reason: "양산품 측정", message: "연장근무 일괄 등록 확인 완료했습니다." }
+      { displayName: "테스트 사용자", employeeIdHint: "***", attempt: 1, status: "dry-run", code: "SAMPLE", reason: "양산품 측정", message: "샘플 실행 기록입니다." }
     ],
     logFile: "20260916-2026-09-16T08-01-24-799Z.jsonl"
   }
@@ -140,6 +138,42 @@ const DEFAULT_STATUS = {
 let currentAccounts = [];
 let editingAccountIndex = null;
 let eventSource = null;
+const ACCOUNT_PREFERENCES_KEY = 'sftc_account_preferences_v1';
+
+function loadAccountPreferences() {
+  try {
+    const value = JSON.parse(localStorage.getItem(ACCOUNT_PREFERENCES_KEY) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveAccountPreferences(accounts = currentAccounts) {
+  const safePreferences = accounts.map((account, index) => ({
+    id: String(account.id || `index-${index}`),
+    displayName: String(account.displayName || '').slice(0, 50),
+    enabled: account.enabled !== false,
+    todayReason: String(account.todayReason || '').slice(0, 100),
+    reasons: Array.isArray(account.reasons) ? account.reasons.map(reason => String(reason).slice(0, 100)).slice(0, 30) : []
+  }));
+  localStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(safePreferences));
+}
+
+function applyAccountPreferences(accounts) {
+  const preferences = loadAccountPreferences();
+  return accounts.map((account, index) => {
+    const preference = preferences.find(item => item.id === String(account.id || `index-${index}`)) || preferences[index];
+    if (!preference) return account;
+    return {
+      ...account,
+      displayName: preference.displayName || account.displayName,
+      enabled: preference.enabled,
+      todayReason: preference.todayReason || account.todayReason,
+      reasons: preference.reasons?.length ? preference.reasons : account.reasons
+    };
+  });
+}
 
 // 랜덤 사유 추출 유틸리티
 function getRandomReason(reasons, currentReason) {
@@ -188,7 +222,10 @@ function initEventListeners() {
   const btnRunLive = document.getElementById('btnRunLive');
   if (btnRunLive) {
     btnRunLive.addEventListener('click', () => {
-      if (confirm('오늘자 연장근무를 실제로 사이트에 등록하시겠습니까?\n(신청 활성화된 인원은 즉시 최종 제출됩니다.)')) {
+      const summary = currentAccounts.filter(acc => acc.enabled).map(acc => `${acc.displayName}: ${acc.todayReason || '사유 미선택'}`).join('\n');
+      if (!summary) return alert('신청 대상으로 선택된 인원이 없습니다.');
+      if (currentAccounts.some(acc => acc.enabled && !acc.todayReason)) return alert('모든 신청 대상의 근태 사유를 직접 선택하세요.');
+      if (confirm(`오늘자 연장근무를 실제 등록합니다.\n\n${summary}\n\n대상·날짜·사유를 확인했습니까?`)) {
         triggerRun({ dryRun: false });
       }
     });
@@ -389,8 +426,8 @@ async function triggerRun(params) {
   try {
     const res = await fetch(getApiBaseUrl() + '/api/run', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+      body: JSON.stringify({ ...params, requestedAt: new Date().toISOString() }),
     });
     const data = await res.json();
     if (!data.success) {
@@ -414,54 +451,30 @@ async function loadAccounts() {
     if (res.ok) {
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts) && data.accounts.length > 0) {
-        currentAccounts = data.accounts;
-        ensureRandomTodayReasons();
-        localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
+        currentAccounts = applyAccountPreferences(data.accounts);
+        ensureExplicitTodayReasons();
         renderAllAccountViews();
         return;
       }
     }
   } catch (err) {
-    console.warn('API /api/accounts 호출 불가, 로컬 저장소 또는 기본 계정을 로드합니다.');
+    console.warn('API /api/accounts 호출 불가');
   }
 
-  // Fallback 1: localStorage
-  const saved = localStorage.getItem('sftc_accounts');
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        currentAccounts = parsed;
-        ensureRandomTodayReasons();
-        renderAllAccountViews();
-        return;
-      }
-    } catch (e) {
-      console.error('localStorage 파싱 오류:', e);
-    }
-  }
-
-  // Fallback 2: DEFAULT_ACCOUNTS
+  // 민감정보는 브라우저 저장소로 폴백하지 않는다.
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
-  ensureRandomTodayReasons();
+  currentAccounts = applyAccountPreferences(currentAccounts);
+  ensureExplicitTodayReasons();
   renderAllAccountViews();
 }
 
 // 모든 팀원에게 중복되지 않도록 등록 사유 중 랜덤으로 배정
-function ensureRandomTodayReasons() {
-  const used = new Set();
+function ensureExplicitTodayReasons() {
   currentAccounts.forEach((acc) => {
-    if (acc.displayName === '제현') acc.displayName = '이제현';
     const reasons = Array.isArray(acc.reasons) && acc.reasons.length > 0
       ? acc.reasons
       : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
-
-    if (!acc.todayReason || !reasons.includes(acc.todayReason)) {
-      const avail = reasons.filter((r) => !used.has(r));
-      const chosen = avail.length > 0 ? getRandomReason(avail) : getRandomReason(reasons);
-      acc.todayReason = chosen;
-    }
-    used.add(acc.todayReason);
+    if (!reasons.includes(acc.todayReason)) acc.todayReason = '';
   });
 }
 
@@ -487,7 +500,7 @@ function renderMemberCards() {
       : ['양산품 측정', '개발품 측정업무', '수입검사', '출하검사', '고객사 자료 작성'];
 
     if (!acc.todayReason || !reasonsList.includes(acc.todayReason)) {
-      acc.todayReason = getRandomReason(reasonsList);
+      acc.todayReason = '';
     }
     const currentReason = acc.todayReason;
 
@@ -512,9 +525,6 @@ function renderMemberCards() {
         <div class="member-card-reason-box">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
             <label style="font-size: 12px; color: var(--gray-600); font-weight: 500; margin: 0;">오늘 사유:</label>
-            <button type="button" class="btn-reroll-reason" onclick="rerollMemberReason(${index})" title="등록 사유 중 랜덤 재선택" style="font-size: 11px; color: var(--primary); background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-weight: 600; padding: 0;">
-              <span>🎲</span> 랜덤 변경
-            </button>
           </div>
           <select class="member-card-select" onchange="updateMemberReason(${index}, this.value)">
             ${optionsHtml}
@@ -531,6 +541,8 @@ function renderMemberCards() {
 
 // 개별 사유 랜덤 재선택
 window.rerollMemberReason = async (index) => {
+  alert('랜덤 사유 배정은 비활성화되었습니다. 근태 사유를 직접 선택하세요.');
+  return;
   const acc = currentAccounts[index];
   if (!acc) return;
   const reasonsList = Array.isArray(acc.reasons) && acc.reasons.length > 0
@@ -547,6 +559,8 @@ window.rerollMemberReason = async (index) => {
 
 // 전체 팀원 사유 일괄 랜덤 배정
 window.rerollAllMemberReasons = async () => {
+  alert('랜덤 사유 배정은 비활성화되었습니다. 근태 사유를 직접 선택하세요.');
+  return;
   const used = new Set();
   currentAccounts.forEach((acc) => {
     const reasons = Array.isArray(acc.reasons) && acc.reasons.length > 0
@@ -596,8 +610,7 @@ function showToast(msg) {
 }
 
 async function saveAccountsSilent() {
-  localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
-
+  saveAccountPreferences();
   try {
     const res = await fetch(getApiBaseUrl() + '/api/accounts', {
       method: 'POST',
@@ -612,7 +625,7 @@ async function saveAccountsSilent() {
       }
     }
   } catch (err) {
-    console.warn('서버 실시간 동기화 오류 (로컬 저장 유지됨):', err);
+    console.warn('서버 실시간 동기화 오류:', err);
   }
 }
 
@@ -718,6 +731,8 @@ async function saveAccounts() {
     }
   });
 
+  saveAccountPreferences();
+
   let serverSaved = false;
   try {
     const res = await fetch(getApiBaseUrl() + '/api/accounts', {
@@ -728,7 +743,7 @@ async function saveAccounts() {
     if (res.ok) {
       const data = await res.json();
       if (data.success) {
-        currentAccounts = data.accounts;
+        currentAccounts = applyAccountPreferences(data.accounts);
         serverSaved = true;
       }
     }
@@ -736,13 +751,12 @@ async function saveAccounts() {
     console.warn('API 저장 오류:', err);
   }
 
-  localStorage.setItem('sftc_accounts', JSON.stringify(currentAccounts));
   renderAllAccountViews();
 
   if (serverSaved) {
-    alert('팀원 계정 설정이 서버와 웹 브라우저에 성공적으로 영구 저장되었습니다.');
+    alert('팀원 계정 설정이 서버에 저장되었습니다.');
   } else {
-    alert('팀원 계정 설정이 성공적으로 저장되었습니다!\n(브라우저 저장소에 영구 보존됩니다.)');
+    alert('서버 저장에 실패했습니다. 이름·활성 상태·사유는 이 브라우저에 보존했으며 사번과 비밀번호는 저장하지 않았습니다.');
   }
 }
 

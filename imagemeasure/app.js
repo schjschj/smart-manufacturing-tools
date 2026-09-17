@@ -149,6 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fine-tuning correction multiplier
   let fineCorrectionFactor = 1.0;
+  const fineTuneHistory = [];
+  const APP_VERSION = '0.9.0';
+
+  function safeSpreadsheetText(value) {
+    const text = String(value ?? '');
+    return /^[=+\-@]/u.test(text) ? `'${text}` : text;
+  }
 
   // Label Text Size (px, Min 7px, default 14px)
   let labelFontSize = 14;
@@ -180,6 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFECT_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4'];
   const STORAGE_KEY = 'NanoMeasure_Calib_State_v1';
   const PRESETS_KEY = 'NanoMeasure_Presets_v1';
+  const SAMPLE_IMAGE_NAME = '250513-스크레치-인위-11_2.png';
+  const SAMPLE_IMAGE_URL = new URL(SAMPLE_IMAGE_NAME, window.location.href).href;
 
   // --- Canvas Sizing Setup ---
   function initCanvasSize() {
@@ -483,6 +492,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (exportPdfBtn) {
     exportPdfBtn.addEventListener('click', async () => {
       if (!img) return;
+      if (!isCalibrated) {
+        alert('PDF 보고서를 만들기 전에 이미지 캘리브레이션을 완료하세요.');
+        return;
+      }
 
       const { jsPDF } = window.jspdf || {};
       const html2canvas = window.html2canvas;
@@ -577,6 +590,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div><strong>파일명:</strong> ${escapeHtml(currentImageName)}</div>
           <div><strong>캘리브레이션 스케일:</strong> ${(scaleX * fineCorrectionFactor).toFixed(4)} px/${unit}</div>
           <div><strong>총 검사 결함:</strong> ${defects.length}건</div>
+          <div><strong>도구 버전:</strong> ${APP_VERSION}</div>
+          <div><strong>보정 이력:</strong> ${fineTuneHistory.length}건 / 표시 해상도 ${precisionStep}</div>
         </div>
 
         <div style="text-align: center; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; padding: 10px; background: #000;">
@@ -921,16 +936,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (loadSampleBtn) {
     loadSampleBtn.addEventListener('click', () => {
-      const sampleName = "250513-스크레치-인위-11_2.png";
-      const samplePath = encodeURI(sampleName);
-      
-      const existingIdx = uploadedImages.findIndex(i => i.name === sampleName);
+      const existingIdx = uploadedImages.findIndex(i => i.name === SAMPLE_IMAGE_NAME);
       if (existingIdx >= 0) {
         switchActiveImage(existingIdx);
       } else {
         uploadedImages.push({
-          name: sampleName,
-          src: samplePath
+          name: SAMPLE_IMAGE_NAME,
+          src: SAMPLE_IMAGE_URL
         });
         renderImageQueue();
         switchActiveImage(uploadedImages.length - 1);
@@ -1234,7 +1246,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const baseDistance = calculateBaseDefectDistance(defect);
       if (baseDistance <= 0) return;
 
+      const previousFactor = fineCorrectionFactor;
       fineCorrectionFactor = targetVal / baseDistance;
+      fineTuneHistory.push({ timestamp: new Date().toISOString(), defectId: selectedId, measured: baseDistance, reference: targetVal, previousFactor, appliedFactor: fineCorrectionFactor });
       
       updateFineTuneUI();
       updateCalibrationScale();
@@ -2082,18 +2096,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // Export CSV
   if (exportCsvBtn) {
     exportCsvBtn.addEventListener('click', () => {
+      if (!isCalibrated) {
+        alert('CSV를 내보내기 전에 이미지 캘리브레이션을 완료하세요.');
+        return;
+      }
       if (defects.length === 0) {
         alert('내보낼 결함 측정 데이터가 없습니다.');
         return;
       }
 
       const unit = unitSelect ? unitSelect.value : 'mm';
-      let csvContent = `ID,Tool,Points,Real_Length,Unit,Fine_Factor,Note,Timestamp\n`;
+      let csvContent = `App_Version,ID,Tool,Points,Real_Length,Unit,Fine_Factor,Display_Resolution,Note,Timestamp\n`;
 
       defects.forEach(d => {
-        const noteClean = `"${(d.note || '').replace(/"/g, '""')}"`;
+        const noteClean = `"${safeSpreadsheetText(d.note || '').replace(/"/g, '""')}"`;
         const ptsStr = `"${JSON.stringify(d.points).replace(/"/g, '""')}"`;
-        csvContent += `${d.id},${d.tool || 'LINE'},${ptsStr},${d.length.toFixed(4)},${unit},${fineCorrectionFactor.toFixed(4)},${noteClean},${new Date().toISOString()}\n`;
+        csvContent += `${APP_VERSION},${d.id},${d.tool || 'LINE'},${ptsStr},${d.length.toFixed(4)},${unit},${fineCorrectionFactor.toFixed(4)},${precisionStep},${noteClean},${new Date().toISOString()}\n`;
       });
 
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -2109,11 +2127,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto-load sample image on startup into Queue!
   setTimeout(() => {
-    const sampleName = "250513-스크레치-인위-11_2.png";
-    const samplePath = encodeURI(sampleName);
     uploadedImages.push({
-      name: sampleName,
-      src: samplePath
+      name: SAMPLE_IMAGE_NAME,
+      src: SAMPLE_IMAGE_URL
     });
     renderImageQueue();
     switchActiveImage(0);
