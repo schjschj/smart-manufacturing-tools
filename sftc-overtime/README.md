@@ -1,7 +1,7 @@
 # ⏱️ SFTC 연장근무 자동등록 시스템
 
 > **SANG-A SFTC 팀원 연장근무 신청 자동화, 일정 예약 및 실행 로그 모니터링 대시보드**  
-> 🔗 **배포 터널 (Live Tunnel)**: [https://meters-gui-dependence-confidentiality.trycloudflare.com/](https://meters-gui-dependence-confidentiality.trycloudflare.com/)
+> 🔗 **배포 터널 (Live Tunnel)**: 공개 소스에 기록하지 않고 `window.SFTC_API_BASE_URL` 런타임 설정으로 주입합니다.
 
 ---
 

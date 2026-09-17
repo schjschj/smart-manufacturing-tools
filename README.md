@@ -14,7 +14,7 @@
 | **FMS 데이터 분석 & 이상 탐지** | [`fms-measure-anomaly/`](./fms-measure-anomaly) | 자동화 설비의 측정데이터(CSV,Excel) Raw 파일을 바탕으로 설비성 불량(LMS,수대성) 공정별 측정편차, SPC통계 공정분석, 시계열 이상 탐지 및 파레토 분석 등 다양한 품질적 분석 수행 | [Cloudflare](https://measure.schjschj.workers.dev/) |
 | **로트추적 분석기 (미주 FMS)** | [`lottracking/`](./lottracking) | 양산-인천-미주 공정의 투입 로트를 정전개,역전개하여, 불량 발생시 신속하고 정확한 Risk Range 설정 | [Netlify](https://lottracking.netlify.app/) |
 | **비전 방식별 비교 대시보드** | [`vision-inspection-dashboard/`](./vision-inspection-dashboard) | 머신비전 4대 기술(2D, 2.5D, 3D, AI)의 검출력, 택트타임, 조명 민감도, 투자비를 레이더 차트로 비교하고 ROI 시뮬레이션 | [Netlify](https://magical-narwhal-ae37fe.netlify.app/) |
-| **SFTC 연장근무 자동등록** | [`sftc-overtime/`](./sftc-overtime) | 연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 로그 모니터링 확인 | [Cloudflare Tunnel](https://meters-gui-dependence-confidentiality.trycloudflare.com/) |
+| **SFTC 연장근무 자동등록** | [`sftc-overtime/`](./sftc-overtime) | 연장근무 등록 자동화, 매일 정기 실행 예약 스케줄링 및 실시간 로그 모니터링 확인 | 내부 테스트 URL은 환경 설정으로 주입 |
 | **글로벌 재고·물류 모니터** | [`retro-inventory-monitor`](https://github.com/schjschj/retro-inventory-monitor) | 인천-미주-고객 거점별 재고현황 및 물류 이송을 시뮬레이션 (SANG-A 한-미 글로벌 전술 지휘센터) | [Vercel](https://retro-inventory-monitor.vercel.app/) |
 | **설비 알람 이력 분석기** | `automation-alarm-monitor` | 자동화 설비의 알람 이력을 바탕으로 공정별 설비 특이점을 분석 | [Render](https://automation-alarm-monitor.onrender.com/) |
 

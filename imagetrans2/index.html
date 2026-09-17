@@ -751,7 +751,7 @@
 
         <div class="save-mode-grid">
           <label class="save-mode-card">
-            <input type="radio" name="saveMode" id="modeOverwrite" value="overwrite" checked onchange="onSaveModeChange()" />
+            <input type="radio" name="saveMode" id="modeOverwrite" value="overwrite" onchange="onSaveModeChange()" />
             <div class="save-mode-box">
               <span class="sm-icon">♻️</span>
               <span class="sm-title" data-i18n="mode_overwrite_title">원본 덮어쓰기</span>
@@ -760,7 +760,7 @@
           </label>
 
           <label class="save-mode-card">
-            <input type="radio" name="saveMode" id="modeSeparate" value="separate" onchange="onSaveModeChange()" />
+            <input type="radio" name="saveMode" id="modeSeparate" value="separate" checked onchange="onSaveModeChange()" />
             <div class="save-mode-box">
               <span class="sm-icon">📁</span>
               <span class="sm-title" data-i18n="mode_separate_title">별도 폴더 저장</span>
@@ -1184,6 +1184,15 @@
       const keepAR = document.getElementById('chkAspect').checked;
       const mode = document.querySelector('input[name="saveMode"]:checked').value;
 
+      if (imageFiles.length > 2000) {
+        alert('한 번에 최대 2,000개 파일까지 처리할 수 있습니다. 작업을 나누어 주세요.');
+        return;
+      }
+      if (mode === 'overwrite') {
+        const first = confirm(`원본 ${imageFiles.length}개를 변경하려고 합니다. 원본은 _backup 폴더에 보관됩니다. 계속하시겠습니까?`);
+        if (!first || !confirm('원본 덮어쓰기는 되돌리기 어려울 수 있습니다. 정말 실행하시겠습니까?')) return;
+      }
+
       if (mode !== 'overwrite' && !outDirHandle) {
         alert('출력 저장 폴더를 선택해주세요.');
         return;
@@ -1195,6 +1204,7 @@
 
       let okCount = 0;
       let failCount = 0;
+      const conversionReport = [];
       totalAfterSize = 0;
 
       const personCount = Math.max(1, parseInt(document.getElementById('inPersonCount').value) || 1);
@@ -1214,6 +1224,11 @@
           let outH = targetH;
           const srcW = imgBitmap.width;
           const srcH = imgBitmap.height;
+
+          if (srcW * srcH > 100000000) {
+            imgBitmap.close();
+            throw new Error('100MP를 초과한 이미지는 안전을 위해 건너뜁니다.');
+          }
 
           if (keepAR) {
             if (outW && !outH) outH = Math.round((srcH / srcW) * outW);
@@ -1281,9 +1296,11 @@
           }
 
           okCount++;
+          conversionReport.push({ file: fileObj.name, status: 'success', beforeBytes: file.size, afterBytes: blob.size, source: `${srcW}x${srcH}`, output: `${outW}x${outH}`, format });
         } catch (e) {
           console.error(e);
           failCount++;
+          conversionReport.push({ file: fileObj.name, status: 'failed', reason: String(e && e.message ? e.message : e) });
         }
       }
 
@@ -1295,6 +1312,14 @@
 
       document.getElementById('summaryBox').style.display = 'block';
       document.getElementById('btnStart').disabled = false;
+      const reportBlob = new Blob([JSON.stringify({ appVersion: '0.9.0', generatedAt: new Date().toISOString(), mode, files: conversionReport }, null, 2)], { type: 'application/json' });
+      const reportLink = document.createElement('a');
+      reportLink.href = URL.createObjectURL(reportBlob);
+      reportLink.download = `image-conversion-report-${Date.now()}.json`;
+      reportLink.textContent = '변환 결과 리포트 다운로드';
+      reportLink.style.cssText = 'display:inline-block;margin-top:12px;color:var(--accent);font-weight:700';
+      reportLink.addEventListener('click', () => setTimeout(() => URL.revokeObjectURL(reportLink.href), 1000), { once: true });
+      document.getElementById('summaryBox').appendChild(reportLink);
     }
   </script>
 </body>

@@ -533,14 +533,15 @@ function analyzeParameter(parameterName, ignoreFilters = false) {
     let cp = null;
     let cpk = null;
     
-    if (lsl !== null && usl !== null && stdDev > 0) {
+    const capabilityEligible = values.length >= 30 && stdDev > 0;
+    if (lsl !== null && usl !== null && capabilityEligible) {
         cp = (usl - lsl) / (6 * stdDev);
         const cpu = (usl - mean) / (3 * stdDev);
         const cpl = (mean - lsl) / (3 * stdDev);
         cpk = Math.min(cpu, cpl);
-    } else if (lsl !== null && stdDev > 0) {
+    } else if (lsl !== null && capabilityEligible) {
         cpk = (mean - lsl) / (3 * stdDev);
-    } else if (usl !== null && stdDev > 0) {
+    } else if (usl !== null && capabilityEligible) {
         cpk = (usl - mean) / (3 * stdDev);
     }
     
@@ -593,6 +594,8 @@ function analyzeParameter(parameterName, ignoreFilters = false) {
         lcl,
         cp,
         cpk,
+        capabilityEligible,
+        capabilityNote: capabilityEligible ? '표본수/표준편차 조건 충족' : 'Cpk 미표시: 유효 표본 30개 이상과 0보다 큰 표준편차가 필요합니다.',
         anomalies: paramAnomalies
     };
 }
@@ -860,6 +863,10 @@ function initImporter({ onFileParsed, showToast }) {
             showToast('지원되지 않는 파일 형식입니다. CSV 또는 Excel 파일을 선택해주세요.', 'error');
             return;
         }
+        if (file.size > 100 * 1024 * 1024) {
+            showToast('파일이 100MB를 초과합니다. 작업을 나누어 주세요.', 'error');
+            return;
+        }
 
         // Set file meta state
         state.reset();
@@ -918,6 +925,10 @@ function initImporter({ onFileParsed, showToast }) {
                     return;
                 }
                 
+                if (results.data.length > 200000) {
+                    showToast('데이터가 200,000행을 초과합니다. 파일을 분할해 주세요.', 'error');
+                    return;
+                }
                 state.rawData = results.data;
                 state.fileMeta.rows = results.data.length;
                 
@@ -947,6 +958,10 @@ function initImporter({ onFileParsed, showToast }) {
                 return;
             }
             
+            if (jsonData.length > 200000) {
+                showToast('데이터가 200,000행을 초과합니다. 파일을 분할해 주세요.', 'error');
+                return;
+            }
             state.rawData = jsonData;
             state.fileMeta.rows = jsonData.length;
             
