@@ -175,6 +175,19 @@ function applyAccountPreferences(accounts) {
   });
 }
 
+function accountPreferencesAsFallback() {
+  return loadAccountPreferences().map((preference, index) => ({
+    id: preference.id || `local-${index}`,
+    displayName: preference.displayName || `사용자 ${index + 1}`,
+    employeeId: '',
+    password: '',
+    hasPassword: false,
+    enabled: preference.enabled !== false,
+    todayReason: preference.todayReason || '',
+    reasons: preference.reasons?.length ? preference.reasons : ['양산품 측정', '개발품 측정업무', '수입검사']
+  }));
+}
+
 // 랜덤 사유 추출 유틸리티
 function getRandomReason(reasons, currentReason) {
   if (!Array.isArray(reasons) || reasons.length === 0) return '양산품 측정';
@@ -463,6 +476,7 @@ async function loadAccounts() {
 
   // 민감정보는 브라우저 저장소로 폴백하지 않는다.
   currentAccounts = JSON.parse(JSON.stringify(DEFAULT_ACCOUNTS));
+  if (currentAccounts.length === 0) currentAccounts = accountPreferencesAsFallback();
   currentAccounts = applyAccountPreferences(currentAccounts);
   ensureExplicitTodayReasons();
   renderAllAccountViews();

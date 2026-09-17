@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Fine-tuning correction multiplier
   let fineCorrectionFactor = 1.0;
   const fineTuneHistory = [];
-  const APP_VERSION = '0.9.0';
+  const APP_VERSION = '1.3.0';
 
   function safeSpreadsheetText(value) {
     const text = String(value ?? '');

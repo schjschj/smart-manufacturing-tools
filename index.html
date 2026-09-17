@@ -362,6 +362,21 @@
     .meta-chip { padding:2px 7px; border-radius:999px; font-size:.62rem; background:#1e293b; color:#cbd5e1; border:1px solid #334155; }
     .meta-chip.status { background:#92400e55; color:#fde68a; border-color:#f59e0b66; }
     .feedback-btn { border:0; cursor:pointer; }
+    .memo-button { border:1px solid #60a5fa66; color:#dbeafe; background:#2563eb33; border-radius:8px; padding:5px 10px; cursor:pointer; font-weight:700; }
+    .memo-modal { position:fixed; inset:0; z-index:1200; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(2,6,23,.82); }
+    .memo-modal.active { display:flex; }
+    .memo-panel { width:min(680px,96vw); max-height:90vh; overflow:auto; border:1px solid #475569; border-radius:16px; background:#0f172a; box-shadow:0 24px 80px #000a; }
+    .memo-head { display:flex; justify-content:space-between; align-items:center; padding:16px 18px; border-bottom:1px solid #334155; }
+    .memo-body { padding:18px; }
+    .memo-field { display:grid; gap:6px; margin-bottom:13px; color:#cbd5e1; font-size:.82rem; }
+    .memo-field input,.memo-field textarea { width:100%; box-sizing:border-box; border:1px solid #475569; border-radius:8px; padding:10px 12px; background:#020617; color:#f8fafc; font:inherit; }
+    .memo-field textarea { min-height:120px; resize:vertical; }
+    .memo-actions { display:flex; justify-content:flex-end; gap:8px; }
+    .memo-list { display:grid; gap:10px; margin-top:18px; }
+    .memo-item { border:1px solid #334155; border-radius:10px; padding:12px; background:#111827; }
+    .memo-item-head { display:flex; justify-content:space-between; gap:10px; margin-bottom:7px; color:#93c5fd; font-size:.75rem; }
+    .memo-item p { white-space:pre-wrap; color:#e2e8f0; font-size:.82rem; margin:0; }
+    .memo-empty { color:#94a3b8; text-align:center; padding:20px; border:1px dashed #334155; border-radius:10px; }
 
     @media (max-height: 660px), (max-width: 1100px) {
       html, body {
@@ -385,7 +400,7 @@
       <h1>SANG-A Quality Tool</h1>
       <p class="subtitle">품질 보증, 검사 비전 분석, 설비 공정 이상 탐지, 글로벌 물류 시뮬레이션 및 업무 자동화 통합 엔지니어링 웹 플랫폼</p>
     </header>
-    <div class="test-banner" role="status"><strong>내부 테스트 v0.9.0</strong><span>실데이터는 승인된 업무용 기기에서만 사용하세요.</span><a href="/_internal/logout">로그아웃</a></div>
+    <div class="test-banner" role="status"><strong>통합 포털 v1.2.0</strong><span>실데이터는 승인된 업무용 기기에서만 사용하세요.</span><span id="authStatus">접속 방식 확인 중</span><button type="button" class="memo-button" id="openMemoBoard">피드백 메모 <span id="memoCount">0</span></button><a id="logoutLink" href="/_internal/logout" hidden>로그아웃</a></div>
 
     <div class="grid">
       <!-- 1. imagetrans2 -->
@@ -617,6 +632,21 @@
     </footer>
   </div>
 
+  <div id="memoModal" class="memo-modal" role="dialog" aria-modal="true" aria-labelledby="memoTitle">
+    <div class="memo-panel">
+      <div class="memo-head"><strong id="memoTitle">피드백 메모</strong><button type="button" class="img-modal-close" id="closeMemoModal" aria-label="닫기">&times;</button></div>
+      <div class="memo-body">
+        <p id="memoToolLabel" style="color:#93c5fd;margin:0 0 14px;"></p>
+        <form id="memoForm">
+          <label class="memo-field">이름<input id="memoName" name="name" maxlength="40" required autocomplete="name"></label>
+          <label class="memo-field">내용<textarea id="memoContent" name="content" maxlength="2000" required></textarea></label>
+          <div class="memo-actions"><button type="button" class="btn btn-secondary" id="cancelMemo">취소</button><button type="submit" class="btn btn-primary">메모 저장</button></div>
+        </form>
+        <div id="memoList" class="memo-list" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- 이미지 원본 확대 모달 (Lightbox) -->
   <div id="imageModal" class="img-modal" onclick="closeImageModal(event)">
     <div class="img-modal-content" onclick="event.stopPropagation()">
@@ -631,9 +661,79 @@
   </div>
 
   <script>
-    const TOOL_VERSION = '0.9.0';
-    const TOOL_UPDATED = '2026-09-17';
     const TOOL_OWNER = '품질팀';
+    const TOOL_META = {
+      imagetrans2: { version: '1.4.0', updated: '2026-06-16' },
+      imagemeasure: { version: '1.3.0', updated: '2026-08-11' },
+      'fms-measure-anomaly': { version: '2.8.0', updated: '2026-05-03' },
+      lottracking: { version: '1.4.0', updated: '2026-03-09' },
+      'vision-inspection-dashboard': { version: '1.2.0', updated: '2026-09-17' },
+      'sftc-overtime': { version: '1.4.0', updated: '2026-07-29' },
+      'retro-inventory-monitor': { version: '1.4.0', updated: '2026-09-04' },
+      'automation-alarm-monitor': { version: '1.3.0', updated: '2026-09-17' }
+    };
+    const FEEDBACK_STORAGE_KEY = 'sang_a_tool_feedback_v1';
+    let activeFeedbackTool = '전체 포털';
+
+    function readFeedbackMemos() {
+      try {
+        const value = JSON.parse(localStorage.getItem(FEEDBACK_STORAGE_KEY) || '[]');
+        return Array.isArray(value) ? value : [];
+      } catch (_) { return []; }
+    }
+
+    function writeFeedbackMemos(memos) {
+      localStorage.setItem(FEEDBACK_STORAGE_KEY, JSON.stringify(memos.slice(-200)));
+    }
+
+    function renderFeedbackMemos() {
+      const memos = readFeedbackMemos();
+      document.getElementById('memoCount').textContent = memos.length;
+      const list = document.getElementById('memoList');
+      list.replaceChildren();
+      if (!memos.length) {
+        const empty = document.createElement('div');
+        empty.className = 'memo-empty';
+        empty.textContent = '저장된 피드백 메모가 없습니다.';
+        list.appendChild(empty);
+        return;
+      }
+      [...memos].reverse().forEach((memo) => {
+        const item = document.createElement('article');
+        item.className = 'memo-item';
+        const head = document.createElement('div');
+        head.className = 'memo-item-head';
+        const info = document.createElement('span');
+        info.textContent = `${memo.tool} · ${memo.name} · ${new Date(memo.createdAt).toLocaleString('ko-KR')}`;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'btn btn-secondary';
+        remove.textContent = '삭제';
+        remove.addEventListener('click', () => {
+          if (!confirm('이 피드백 메모를 삭제할까요?')) return;
+          writeFeedbackMemos(readFeedbackMemos().filter((entry) => entry.id !== memo.id));
+          renderFeedbackMemos();
+        });
+        const content = document.createElement('p');
+        content.textContent = memo.content;
+        head.append(info, remove);
+        item.append(head, content);
+        list.appendChild(item);
+      });
+    }
+
+    function openFeedbackMemo(tool = '전체 포털') {
+      activeFeedbackTool = tool;
+      document.getElementById('memoToolLabel').textContent = `대상 도구: ${tool} · 메모는 이 브라우저에 저장됩니다.`;
+      document.getElementById('memoModal').classList.add('active');
+      renderFeedbackMemos();
+      document.getElementById('memoName').focus();
+    }
+
+    function closeFeedbackMemo() {
+      document.getElementById('memoModal').classList.remove('active');
+      document.getElementById('memoForm').reset();
+    }
     function openImageModal(imgSrc, title) {
       const modal = document.getElementById('imageModal');
       const modalImg = document.getElementById('modalImage');
@@ -670,11 +770,13 @@
     document.querySelectorAll('a[target="_blank"]').forEach((link) => link.setAttribute('rel', 'noopener noreferrer'));
     document.querySelectorAll('.card').forEach((card) => {
       const title = card.querySelector('h2')?.textContent?.trim() || '도구';
+      const slug = card.querySelector('.tag')?.textContent?.trim() || '';
+      const toolMeta = TOOL_META[slug] || { version: '1.0.0', updated: '2026-09-17' };
       const top = card.querySelector('.card-top');
       if (top) {
         const meta = document.createElement('div');
         meta.className = 'tool-meta';
-        ['내부 테스트', `v${TOOL_VERSION}`, TOOL_UPDATED, `담당 ${TOOL_OWNER}`].forEach((text, index) => {
+        ['내부 테스트', `v${toolMeta.version}`, toolMeta.updated, `담당 ${TOOL_OWNER}`].forEach((text, index) => {
           const chip = document.createElement('span');
           chip.className = `meta-chip${index === 0 ? ' status' : ''}`;
           chip.textContent = text;
@@ -688,14 +790,36 @@
         feedback.type = 'button';
         feedback.className = 'btn btn-secondary feedback-btn';
         feedback.textContent = '피드백';
-        feedback.addEventListener('click', () => {
-          const subject = encodeURIComponent(`[내부 테스트 피드백] ${title} v${TOOL_VERSION}`);
-          const body = encodeURIComponent(`도구: ${title}\n버전: ${TOOL_VERSION}\n화면: ${location.pathname}\n\n현상:\n\n기대 결과:\n\n※ 생산 데이터나 파일은 첨부하지 마세요.`);
-          location.href = `mailto:schjschj@stfc.co.kr?subject=${subject}&body=${body}`;
-        });
+        feedback.addEventListener('click', () => openFeedbackMemo(title));
         actions.appendChild(feedback);
       }
     });
+    fetch('/_internal/status', { credentials: 'same-origin', cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('edge auth unavailable')))
+      .then((status) => {
+        document.getElementById('authStatus').textContent = status.authenticated ? '🔒 공통 암호 로그인 · 12시간 세션' : '🔓 로그인 필요';
+        document.getElementById('logoutLink').hidden = !status.authenticated;
+      })
+      .catch(() => {
+        document.getElementById('authStatus').textContent = '⚠ GitHub Pages 공개 원본 접속';
+        document.getElementById('logoutLink').hidden = true;
+      });
+    document.getElementById('openMemoBoard').addEventListener('click', () => openFeedbackMemo('전체 포털'));
+    document.getElementById('closeMemoModal').addEventListener('click', closeFeedbackMemo);
+    document.getElementById('cancelMemo').addEventListener('click', closeFeedbackMemo);
+    document.getElementById('memoModal').addEventListener('click', (event) => { if (event.target.id === 'memoModal') closeFeedbackMemo(); });
+    document.getElementById('memoForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = document.getElementById('memoName').value.trim();
+      const content = document.getElementById('memoContent').value.trim();
+      if (!name || !content) return;
+      const memos = readFeedbackMemos();
+      memos.push({ id: crypto.randomUUID(), tool: activeFeedbackTool, name, content, createdAt: new Date().toISOString() });
+      writeFeedbackMemos(memos);
+      document.getElementById('memoContent').value = '';
+      renderFeedbackMemos();
+    });
+    renderFeedbackMemos();
   </script>
 </body>
 </html>

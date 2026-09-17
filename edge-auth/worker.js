@@ -48,6 +48,13 @@ export default {
     if (url.pathname === '/_internal/logout') {
       return new Response(null, { status: 302, headers: { Location: '/', 'Set-Cookie': `${COOKIE_NAME}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Strict` } });
     }
+    if (url.pathname === '/_internal/status') {
+      const authenticated = await validSession(request, env);
+      return new Response(JSON.stringify({ authenticated, sessionHours: SESSION_SECONDS / 3600 }), {
+        status: authenticated ? 200 : 401,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+      });
+    }
     if (url.pathname === '/_internal/login' && request.method === 'POST') {
       const form = await request.formData();
       if (!timingSafeEqual(String(form.get('password') || ''), env.TEAM_PASSWORD)) return loginPage('암호가 올바르지 않습니다.');
